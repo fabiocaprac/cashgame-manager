@@ -137,19 +137,20 @@ const Index = () => {
   const totalPixPayments = players.reduce((sum, p) => sum + p.pixPayments, 0);
   const totalFinalBalance = players.reduce((sum, p) => sum + p.finalBalance, 0);
 
-  const movements = ["cash", "card", "pix"].map((method) => {
-    const methodTransactions = transactions.filter((t) => t.method === method);
-    const received = methodTransactions.reduce(
-      (sum, t) => sum + t.payment,
-      0
-    );
-    return {
-      method,
-      received,
-      paid: 0, // We don't track outgoing payments in this version
-      balance: received,
-    };
-  });
+  const movements: { method: PaymentMethod; received: number; paid: number; balance: number; }[] = 
+    (["cash", "card", "pix", "voucher"] as PaymentMethod[]).map((method) => {
+      const methodTransactions = transactions.filter((t) => t.method === method);
+      const received = methodTransactions.reduce(
+        (sum, t) => sum + t.payment,
+        0
+      );
+      return {
+        method,
+        received,
+        paid: 0, // We don't track outgoing payments in this version
+        balance: received,
+      };
+    });
 
   return (
     <div className="container mx-auto py-8 space-y-8">

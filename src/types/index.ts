@@ -1,12 +1,12 @@
 export type Player = {
   id: string;
   name: string;
-  purchases: number; // COMPRAS
-  returns: number;   // DEVOLUÇÕES
-  cashPayments: number; // DN
-  cardPayments: number; // CC
-  pixPayments: number;  // PIX
-  finalBalance: number; // SALDO FINAL
+  purchases: number;
+  returns: number;
+  cashPayments: number;
+  cardPayments: number;
+  pixPayments: number;
+  finalBalance: number;
 };
 
 export type Transaction = {
@@ -15,8 +15,8 @@ export type Transaction = {
   type: "buy-in" | "cash-out";
   chips: number;
   payment: number;
-  method: "cash" | "card" | "pix";
+  method: PaymentMethod;
   timestamp: Date;
 };
 
-export type PaymentMethod = "cash" | "card" | "pix";
+export type PaymentMethod = "cash" | "card" | "pix" | "voucher";

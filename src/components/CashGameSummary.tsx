@@ -36,6 +36,19 @@ export function CashGameSummary({
     voucher: Receipt,
   };
 
+  const getMethodLabel = (method: PaymentMethod): string => {
+    switch (method) {
+      case "cash":
+        return "Dinheiro";
+      case "card":
+        return "Cartão";
+      case "pix":
+        return "PIX";
+      case "voucher":
+        return "Vale";
+    }
+  };
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card className="glass-card">
@@ -101,7 +114,7 @@ export function CashGameSummary({
           <Card key={movement.method} className="glass-card col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Movimentação - {movement.method === "cash" ? "Dinheiro" : movement.method === "card" ? "Cartão" : movement.method === "pix" ? "PIX" : "Vale"}
+                Movimentação - {getMethodLabel(movement.method)}
               </CardTitle>
               <Icon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
