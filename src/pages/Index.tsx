@@ -5,7 +5,7 @@ import { CashGameSummary } from "@/components/CashGameSummary";
 import { PlayerTable } from "@/components/PlayerTable";
 import { TransactionDialog } from "@/components/TransactionDialog";
 import { TransactionHistory } from "@/components/TransactionHistory";
-import { Player, Transaction } from "@/types";
+import { Player, Transaction, PaymentMethod } from "@/types";
 import { PlusCircle } from "lucide-react";
 import { useState } from "react";
 
