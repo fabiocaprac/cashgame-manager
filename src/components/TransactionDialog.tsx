@@ -27,7 +27,7 @@ import * as z from "zod";
 
 const formSchema = z.object({
   playerId: z.string().min(1, "Selecione um jogador"),
-  type: z.enum(["buy-in", "cash-out", "refund"]),
+  type: z.enum(["buy-in", "cash-out"]),
   chips: z.number().min(0),
   payment: z.number().min(0),
   method: z.enum(["cash", "card", "pix", "voucher"]),
@@ -93,7 +93,7 @@ export function TransactionDialog({
               name="type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tipo</FormLabel>
+                  <FormLabel>Tipo de Transação</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
@@ -104,9 +104,8 @@ export function TransactionDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="buy-in">Compra</SelectItem>
-                      <SelectItem value="cash-out">Saída</SelectItem>
-                      <SelectItem value="refund">Devolução</SelectItem>
+                      <SelectItem value="buy-in">Compra de Fichas (Buy-in)</SelectItem>
+                      <SelectItem value="cash-out">Devolução de Fichas (Cash-out)</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormItem>
