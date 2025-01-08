@@ -6,6 +6,7 @@ import { PlayerTable } from "@/components/PlayerTable";
 import { TransactionDialog } from "@/components/TransactionDialog";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import { Player, Transaction, PaymentMethod } from "@/types";
+import { calculatePlayerBalance } from "@/utils/balanceCalculations";
 import { PlusCircle } from "lucide-react";
 import { useState } from "react";
 
@@ -57,7 +58,7 @@ const Index = () => {
       type: values.type,
       chips: values.chips,
       payment: values.payment,
-      method: values.method,
+      method: values.method as PaymentMethod,
       timestamp: new Date(),
     };
 
@@ -93,21 +94,19 @@ const Index = () => {
           }
         }
 
-        // Calculate final balance
-        const finalBalance = (newPurchases - newReturns) + 
-                           newCashPayments + 
-                           newCardPayments + 
-                           newPixPayments;
-
-        return {
+        const updatedPlayer = {
           ...p,
           purchases: newPurchases,
           returns: newReturns,
           cashPayments: newCashPayments,
           cardPayments: newCardPayments,
           pixPayments: newPixPayments,
-          finalBalance,
         };
+
+        // Calculate final balance using the new utility function
+        updatedPlayer.finalBalance = calculatePlayerBalance(updatedPlayer);
+
+        return updatedPlayer;
       }
       return p;
     });
@@ -135,7 +134,7 @@ const Index = () => {
   const totalCashPayments = players.reduce((sum, p) => sum + p.cashPayments, 0);
   const totalCardPayments = players.reduce((sum, p) => sum + p.cardPayments, 0);
   const totalPixPayments = players.reduce((sum, p) => sum + p.pixPayments, 0);
-  const totalFinalBalance = players.reduce((sum, p) => sum + p.finalBalance, 0);
+  const totalFinalBalance = -totalPurchases + totalReturns + totalCashPayments + totalCardPayments + totalPixPayments;
 
   const movements: { method: PaymentMethod; received: number; paid: number; balance: number; }[] = 
     (["cash", "card", "pix", "voucher"] as PaymentMethod[]).map((method) => {
@@ -147,7 +146,7 @@ const Index = () => {
       return {
         method,
         received,
-        paid: 0, // We don't track outgoing payments in this version
+        paid: 0,
         balance: received,
       };
     });

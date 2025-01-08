@@ -1,6 +1,7 @@
 import { Player } from "@/types";
 import { History } from "lucide-react";
 import { Button } from "./ui/button";
+import { calculatePlayerBalance } from "@/utils/balanceCalculations";
 
 interface PlayerTableProps {
   players: Player[];
@@ -24,26 +25,43 @@ export function PlayerTable({ players, onViewHistory }: PlayerTableProps) {
           </tr>
         </thead>
         <tbody>
-          {players.map((player) => (
-            <tr key={player.id} className="border-b border-white/10">
-              <td className="py-4 px-4">{player.name}</td>
-              <td className="text-right py-4 px-4">R$ {player.purchases.toFixed(2)}</td>
-              <td className="text-right py-4 px-4">R$ {player.returns.toFixed(2)}</td>
-              <td className="text-right py-4 px-4">R$ {player.cashPayments.toFixed(2)}</td>
-              <td className="text-right py-4 px-4">R$ {player.cardPayments.toFixed(2)}</td>
-              <td className="text-right py-4 px-4">R$ {player.pixPayments.toFixed(2)}</td>
-              <td className="text-right py-4 px-4">R$ {player.finalBalance.toFixed(2)}</td>
-              <td className="py-4 px-4">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onViewHistory(player.id)}
-                >
-                  <History className="h-4 w-4" />
-                </Button>
-              </td>
-            </tr>
-          ))}
+          {players.map((player) => {
+            const finalBalance = calculatePlayerBalance(player);
+            return (
+              <tr key={player.id} className="border-b border-white/10">
+                <td className="py-4 px-4">{player.name}</td>
+                <td className="text-right py-4 px-4 text-destructive">
+                  -R$ {player.purchases.toFixed(2)}
+                </td>
+                <td className="text-right py-4 px-4 text-green-500">
+                  R$ {player.returns.toFixed(2)}
+                </td>
+                <td className="text-right py-4 px-4">
+                  R$ {player.cashPayments.toFixed(2)}
+                </td>
+                <td className="text-right py-4 px-4">
+                  R$ {player.cardPayments.toFixed(2)}
+                </td>
+                <td className="text-right py-4 px-4">
+                  R$ {player.pixPayments.toFixed(2)}
+                </td>
+                <td className={`text-right py-4 px-4 ${
+                  finalBalance >= 0 ? "text-green-500" : "text-destructive"
+                }`}>
+                  {finalBalance >= 0 ? "+" : "-"}R$ {Math.abs(finalBalance).toFixed(2)}
+                </td>
+                <td className="py-4 px-4">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onViewHistory(player.id)}
+                  >
+                    <History className="h-4 w-4" />
+                  </Button>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
