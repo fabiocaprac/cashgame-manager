@@ -63,19 +63,18 @@ const Index = () => {
 
     const updatedPlayers = players.map((p) => {
       if (p.id === values.playerId) {
-        let newChipsInHand = p.chipsInHand;
-        let newDebits = p.debits;
-        let newCredits = p.credits;
+        const newChipsInHand =
+          values.type === "buy-in"
+            ? p.chipsInHand + values.chips
+            : values.type === "cash-out"
+            ? p.chipsInHand - values.chips
+            : p.chipsInHand;
 
-        if (values.type === "buy-in") {
-          // When buying chips, increase chips in hand and debits
-          newChipsInHand += values.chips;
-          newDebits += values.payment;
-        } else if (values.type === "cash-out") {
-          // When returning chips, decrease chips in hand and increase credits
-          newChipsInHand -= values.chips;
-          newCredits += values.payment;
-        }
+        const newDebits =
+          values.type === "buy-in" ? p.debits + values.payment : p.debits;
+
+        const newCredits =
+          values.type === "cash-out" ? p.credits + values.payment : p.credits;
 
         return {
           ...p,
