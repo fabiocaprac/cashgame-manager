@@ -3,6 +3,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Transaction } from "@/types";
 import { format } from "date-fns";
@@ -25,6 +26,9 @@ export function TransactionHistory({
       <DialogContent className="sm:max-w-[725px]">
         <DialogHeader>
           <DialogTitle>Histórico de Transações - {playerName}</DialogTitle>
+          <DialogDescription>
+            Registro completo de compras, devoluções e pagamentos
+          </DialogDescription>
         </DialogHeader>
         <div className="relative overflow-x-auto">
           <table className="w-full text-sm">
@@ -44,11 +48,7 @@ export function TransactionHistory({
                     {format(transaction.timestamp, "dd/MM/yyyy, HH:mm:ss")}
                   </td>
                   <td className="py-3 px-4">
-                    {transaction.type === "buy-in"
-                      ? "Compra"
-                      : transaction.type === "cash-out"
-                      ? "Saída"
-                      : "Devolução"}
+                    {transaction.type === "buy-in" ? "Compra" : "Devolução"}
                   </td>
                   <td className="text-right py-3 px-4">
                     R$ {transaction.chips.toFixed(2)}
@@ -61,9 +61,7 @@ export function TransactionHistory({
                       ? "Dinheiro"
                       : transaction.method === "card"
                       ? "Cartão"
-                      : transaction.method === "pix"
-                      ? "PIX"
-                      : "Vale"}
+                      : "PIX"}
                   </td>
                 </tr>
               ))}

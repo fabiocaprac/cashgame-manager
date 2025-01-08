@@ -31,9 +31,11 @@ const Index = () => {
     const newPlayer: Player = {
       id: crypto.randomUUID(),
       name: newPlayerName,
-      chipsInHand: 0,
-      debits: 0,
-      credits: 0,
+      purchases: 0,
+      returns: 0,
+      cashPayments: 0,
+      cardPayments: 0,
+      pixPayments: 0,
       finalBalance: 0,
     };
 
@@ -63,25 +65,48 @@ const Index = () => {
 
     const updatedPlayers = players.map((p) => {
       if (p.id === values.playerId) {
-        const newChipsInHand =
-          values.type === "buy-in"
-            ? p.chipsInHand + values.chips
-            : values.type === "cash-out"
-            ? p.chipsInHand - values.chips
-            : p.chipsInHand;
+        let newPurchases = p.purchases;
+        let newReturns = p.returns;
+        let newCashPayments = p.cashPayments;
+        let newCardPayments = p.cardPayments;
+        let newPixPayments = p.pixPayments;
 
-        const newDebits =
-          values.type === "buy-in" ? p.debits + values.payment : p.debits;
+        // Update chip transactions
+        if (values.type === "buy-in") {
+          newPurchases += values.chips;
+        } else if (values.type === "cash-out") {
+          newReturns += values.chips;
+        }
 
-        const newCredits =
-          values.type === "cash-out" ? p.credits + values.payment : p.credits;
+        // Update payment method totals
+        if (values.payment > 0) {
+          switch (values.method) {
+            case "cash":
+              newCashPayments += values.payment;
+              break;
+            case "card":
+              newCardPayments += values.payment;
+              break;
+            case "pix":
+              newPixPayments += values.payment;
+              break;
+          }
+        }
+
+        // Calculate final balance
+        const finalBalance = (newPurchases - newReturns) + 
+                           newCashPayments + 
+                           newCardPayments + 
+                           newPixPayments;
 
         return {
           ...p,
-          chipsInHand: newChipsInHand,
-          debits: newDebits,
-          credits: newCredits,
-          finalBalance: newChipsInHand - newDebits + newCredits,
+          purchases: newPurchases,
+          returns: newReturns,
+          cashPayments: newCashPayments,
+          cardPayments: newCardPayments,
+          pixPayments: newPixPayments,
+          finalBalance,
         };
       }
       return p;
@@ -105,27 +130,24 @@ const Index = () => {
     (t) => t.playerId === selectedPlayerId
   );
 
-  const totalChipsInPlay = players.reduce((sum, p) => sum + p.chipsInHand, 0);
-  const totalPendingDebits = players.reduce((sum, p) => sum + p.debits, 0);
-  const totalPendingCredits = players.reduce((sum, p) => sum + p.credits, 0);
-  const totalFinalBalance =
-    totalChipsInPlay - totalPendingDebits + totalPendingCredits;
+  const totalPurchases = players.reduce((sum, p) => sum + p.purchases, 0);
+  const totalReturns = players.reduce((sum, p) => sum + p.returns, 0);
+  const totalCashPayments = players.reduce((sum, p) => sum + p.cashPayments, 0);
+  const totalCardPayments = players.reduce((sum, p) => sum + p.cardPayments, 0);
+  const totalPixPayments = players.reduce((sum, p) => sum + p.pixPayments, 0);
+  const totalFinalBalance = players.reduce((sum, p) => sum + p.finalBalance, 0);
 
-  const movements = ["cash", "card", "pix", "voucher"].map((method) => {
+  const movements = ["cash", "card", "pix"].map((method) => {
     const methodTransactions = transactions.filter((t) => t.method === method);
     const received = methodTransactions.reduce(
-      (sum, t) => (t.type === "buy-in" ? sum + t.payment : sum),
-      0
-    );
-    const paid = methodTransactions.reduce(
-      (sum, t) => (t.type === "cash-out" ? sum + t.payment : sum),
+      (sum, t) => sum + t.payment,
       0
     );
     return {
-      method: method as Transaction["method"],
+      method,
       received,
-      paid,
-      balance: received - paid,
+      paid: 0, // We don't track outgoing payments in this version
+      balance: received,
     };
   });
 
@@ -157,9 +179,9 @@ const Index = () => {
       </div>
 
       <CashGameSummary
-        chipsInPlay={totalChipsInPlay}
-        pendingDebits={totalPendingDebits}
-        pendingCredits={totalPendingCredits}
+        chipsInPlay={totalPurchases - totalReturns}
+        pendingDebits={totalPurchases}
+        pendingCredits={totalReturns}
         finalBalance={totalFinalBalance}
         movements={movements}
       />

@@ -14,9 +14,11 @@ export function PlayerTable({ players, onViewHistory }: PlayerTableProps) {
         <thead>
           <tr className="border-b border-white/10">
             <th className="text-left py-4 px-4">Jogador</th>
-            <th className="text-right py-4 px-4">Fichas em Mãos</th>
-            <th className="text-right py-4 px-4">Débitos</th>
-            <th className="text-right py-4 px-4">Créditos</th>
+            <th className="text-right py-4 px-4">Compras</th>
+            <th className="text-right py-4 px-4">Devoluções</th>
+            <th className="text-right py-4 px-4">DN</th>
+            <th className="text-right py-4 px-4">CC</th>
+            <th className="text-right py-4 px-4">PIX</th>
             <th className="text-right py-4 px-4">Saldo Final</th>
             <th className="py-4 px-4"></th>
           </tr>
@@ -25,16 +27,12 @@ export function PlayerTable({ players, onViewHistory }: PlayerTableProps) {
           {players.map((player) => (
             <tr key={player.id} className="border-b border-white/10">
               <td className="py-4 px-4">{player.name}</td>
-              <td className="text-right py-4 px-4">R$ {player.chipsInHand.toFixed(2)}</td>
-              <td className="text-right py-4 px-4 text-red-500">
-                -R$ {player.debits.toFixed(2)}
-              </td>
-              <td className="text-right py-4 px-4 text-green-500">
-                R$ {player.credits.toFixed(2)}
-              </td>
-              <td className="text-right py-4 px-4">
-                R$ {player.finalBalance.toFixed(2)}
-              </td>
+              <td className="text-right py-4 px-4">R$ {player.purchases.toFixed(2)}</td>
+              <td className="text-right py-4 px-4">R$ {player.returns.toFixed(2)}</td>
+              <td className="text-right py-4 px-4">R$ {player.cashPayments.toFixed(2)}</td>
+              <td className="text-right py-4 px-4">R$ {player.cardPayments.toFixed(2)}</td>
+              <td className="text-right py-4 px-4">R$ {player.pixPayments.toFixed(2)}</td>
+              <td className="text-right py-4 px-4">R$ {player.finalBalance.toFixed(2)}</td>
               <td className="py-4 px-4">
                 <Button
                   variant="ghost"
