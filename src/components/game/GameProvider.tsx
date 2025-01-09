@@ -167,11 +167,20 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["currentGame"] });
+      queryClient.invalidateQueries({ queryKey: ["players", game?.id] });
+      queryClient.invalidateQueries({ queryKey: ["transactions", game?.id] });
       toast({
         title: "Sucesso",
         description: "Jogo encerrado com sucesso",
       });
     },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: "Erro ao encerrar o jogo",
+        variant: "destructive",
+      });
+    }
   });
 
   // Add new player
@@ -202,7 +211,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
   });
 
-  // Add new transaction
+  // Add new transaction with strict closed game check
   const addTransactionMutation = useMutation({
     mutationFn: async (values: {
       playerId: string;
@@ -211,6 +220,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       payment: number;
       method: "cash" | "card" | "pix" | "voucher";
     }) => {
+      if (!game) throw new Error("No game selected");
       if (game.closed_at) throw new Error("Game is closed");
       
       const { error } = await supabase
@@ -221,9 +231,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           chips: values.chips,
           payment: values.payment,
           method: values.method,
-        }])
-        .select()
-        .single();
+        }]);
       
       if (error) throw error;
     },
