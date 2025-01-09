@@ -97,15 +97,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     mutationFn: async () => {
       if (!user?.id) throw new Error("User not authenticated");
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("games")
         .insert([{ created_by: user.id }])
         .select()
         .single();
       
       if (error) throw error;
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setCurrentGameId(data.id);
       queryClient.invalidateQueries({ queryKey: ["game"] });
       toast({
         title: "Sucesso",
