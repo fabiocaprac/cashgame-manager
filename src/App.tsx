@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { GameProvider } from "@/components/game/GameProvider";
-import LoginPage from "@/components/auth/LoginPage";
+import { LoginPage } from "@/components/auth/LoginPage";
 import Index from "@/pages/Index";
 import Dashboard from "@/pages/Dashboard";
 import ClosedGames from "@/pages/ClosedGames";
