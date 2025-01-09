@@ -10,14 +10,13 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
 
-  // Fetch open games
+  // Fetch open registers
   const { data: openGames = [] } = useQuery({
-    queryKey: ["openGames"],
+    queryKey: ["openRegisters"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("games")
+        .from("open_registers")
         .select("*")
-        .is("closed_at", null)
         .order("created_at", { ascending: false });
       
       if (error) throw error;
@@ -25,14 +24,13 @@ export default function Dashboard() {
     },
   });
 
-  // Fetch closed games
+  // Fetch closed registers
   const { data: closedGames = [] } = useQuery({
-    queryKey: ["closedGames"],
+    queryKey: ["closedRegisters"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("games")
+        .from("closed_registers")
         .select("*")
-        .not("closed_at", "is", null)
         .order("closed_at", { ascending: false })
         .limit(5);
       

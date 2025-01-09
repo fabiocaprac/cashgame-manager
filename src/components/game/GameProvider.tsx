@@ -7,7 +7,7 @@ import { Player, Transaction } from "@/types";
 import { Database } from "@/integrations/supabase/types";
 
 type Tables = Database['public']['Tables'];
-type Game = Tables['games']['Row'];
+type Game = Tables['open_registers']['Row'];
 
 interface GameContextType {
   game: Game | null;
@@ -35,9 +35,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       if (!user?.id) return null;
       
       const { data, error } = await supabase
-        .from("games")
+        .from("open_registers")
         .select("*")
-        .is("closed_at", null)
         .eq("created_by", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -131,11 +130,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       if (!user?.id) throw new Error("User not authenticated");
       
       const { data, error } = await supabase
-        .from("games")
+        .from("open_registers")
         .insert([{ 
           created_by: user.id,
           name: values.name || null,
-          notes: values.notes || null,
         }])
         .select()
         .single();
@@ -157,12 +155,27 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     mutationFn: async () => {
       if (!game?.id) throw new Error("No active game");
       
-      const { error } = await supabase
-        .from("games")
-        .update({ closed_at: new Date().toISOString() })
+      // Insert into closed_registers
+      const { error: insertError } = await supabase
+        .from("closed_registers")
+        .insert([{
+          id: game.id,
+          created_at: game.created_at,
+          name: game.name,
+          created_by: game.created_by,
+          last_transaction_at: game.last_transaction_at,
+          closed_at: new Date().toISOString(),
+        }]);
+      
+      if (insertError) throw insertError;
+
+      // Delete from open_registers
+      const { error: deleteError } = await supabase
+        .from("open_registers")
+        .delete()
         .eq("id", game.id);
       
-      if (error) throw error;
+      if (deleteError) throw deleteError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["currentGame"] });
@@ -186,7 +199,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const addPlayerMutation = useMutation({
     mutationFn: async (name: string) => {
       if (!game?.id) throw new Error("No game selected");
-      if (game.closed_at) throw new Error("Game is closed");
       
       const { error } = await supabase
         .from("players")
@@ -210,7 +222,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
   });
 
-  // Add new transaction with strict closed game check
+  // Add new transaction
   const addTransactionMutation = useMutation({
     mutationFn: async (values: {
       playerId: string;
@@ -219,8 +231,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       payment: number;
       method: "cash" | "card" | "pix" | "voucher";
     }) => {
-      if (!game) throw new Error("No game selected");
-      if (game.closed_at) throw new Error("Game is closed");
+      if (!game?.id) throw new Error("No game selected");
       
       const { error } = await supabase
         .from("transactions")
@@ -251,7 +262,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   });
 
   // Add isGameClosed computed property
-  const isGameClosed = game?.closed_at !== null;
+  const isGameClosed = false; // Since we're now using open_registers/closed_registers tables
 
   return (
     <GameContext.Provider

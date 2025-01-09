@@ -9,37 +9,66 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      games: {
+      closed_registers: {
         Row: {
-          closed_at: string | null
+          closed_at: string
           created_at: string
           created_by: string
           id: string
           last_transaction_at: string | null
           name: string | null
-          notes: string | null
         }
         Insert: {
-          closed_at?: string | null
-          created_at?: string
+          closed_at: string
+          created_at: string
           created_by: string
           id?: string
           last_transaction_at?: string | null
           name?: string | null
-          notes?: string | null
         }
         Update: {
-          closed_at?: string | null
+          closed_at?: string
           created_at?: string
           created_by?: string
           id?: string
           last_transaction_at?: string | null
           name?: string | null
-          notes?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "games_created_by_fkey"
+            foreignKeyName: "closed_registers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      open_registers: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          last_transaction_at: string | null
+          name: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          last_transaction_at?: string | null
+          name?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          last_transaction_at?: string | null
+          name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "open_registers_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -68,10 +97,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "players_game_id_fkey"
+            foreignKeyName: "players_open_register_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
-            referencedRelation: "games"
+            referencedRelation: "open_registers"
             referencedColumns: ["id"]
           },
         ]

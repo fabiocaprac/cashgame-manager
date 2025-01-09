@@ -12,9 +12,8 @@ export default function ClosedGames() {
     queryKey: ["closedGames"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("games")
+        .from("closed_registers")
         .select("*")
-        .not("closed_at", "is", null)
         .order("closed_at", { ascending: false });
       
       if (error) throw error;
