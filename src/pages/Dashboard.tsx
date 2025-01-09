@@ -15,7 +15,7 @@ export default function Dashboard() {
     queryKey: ["openRegisters"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("open_registers")
+        .from("open_cashier")
         .select("*")
         .order("created_at", { ascending: false });
       
@@ -29,7 +29,7 @@ export default function Dashboard() {
     queryKey: ["closedRegisters"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("closed_registers")
+        .from("closed_cashier")
         .select("*")
         .order("closed_at", { ascending: false })
         .limit(5);

@@ -9,7 +9,7 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      closed_registers: {
+      closed_cashier: {
         Row: {
           closed_at: string
           created_at: string
@@ -36,15 +36,15 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "closed_registers_created_by_fkey"
+            foreignKeyName: "closed_cashier_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
-      closed_transactions: {
+      closed_cashier_transactions: {
         Row: {
           chips: number
           closed_register_id: string
@@ -77,22 +77,15 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "closed_transactions_closed_register_id_fkey"
+            foreignKeyName: "closed_cashier_transactions_closed_cashier_id_fkey"
             columns: ["closed_register_id"]
             isOneToOne: false
-            referencedRelation: "closed_registers"
+            referencedRelation: "closed_cashier"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "closed_transactions_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "players"
-            referencedColumns: ["id"]
-          },
+          }
         ]
       }
-      open_registers: {
+      open_cashier: {
         Row: {
           created_at: string
           created_by: string
@@ -116,12 +109,12 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "open_registers_created_by_fkey"
+            foreignKeyName: "open_cashier_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       players: {

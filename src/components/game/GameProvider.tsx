@@ -7,7 +7,7 @@ import { Player, Transaction } from "@/types";
 import { Database } from "@/integrations/supabase/types";
 
 type Tables = Database['public']['Tables'];
-type Game = Tables['open_registers']['Row'];
+type Game = Tables['open_cashier']['Row'];
 
 interface GameContextType {
   game: Game | null;
@@ -35,7 +35,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       if (!user?.id) return null;
       
       const { data, error } = await supabase
-        .from("open_registers")
+        .from("open_cashier")
         .select("*")
         .eq("created_by", user.id)
         .order("created_at", { ascending: false })
@@ -130,7 +130,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       if (!user?.id) throw new Error("User not authenticated");
       
       const { data, error } = await supabase
-        .from("open_registers")
+        .from("open_cashier")
         .insert([{ 
           created_by: user.id,
           name: values.name || null,
@@ -163,9 +163,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       
       if (fetchError) throw fetchError;
 
-      // Insert into closed_registers
+      // Insert into closed_cashier
       const { data: closedRegister, error: insertError } = await supabase
-        .from("closed_registers")
+        .from("closed_cashier")
         .insert([{
           id: game.id,
           created_at: game.created_at,
@@ -179,7 +179,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       
       if (insertError) throw insertError;
 
-      // Copy all transactions to closed_transactions
+      // Copy all transactions to closed_cashier_transactions
       if (gameTransactions && gameTransactions.length > 0) {
         const closedTransactions = gameTransactions.map(t => ({
           closed_register_id: closedRegister.id,
@@ -192,15 +192,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         }));
 
         const { error: transactionError } = await supabase
-          .from("closed_transactions")
+          .from("closed_cashier_transactions")
           .insert(closedTransactions);
 
         if (transactionError) throw transactionError;
       }
 
-      // Delete from open_registers
+      // Delete from open_cashier
       const { error: deleteError } = await supabase
-        .from("open_registers")
+        .from("open_cashier")
         .delete()
         .eq("id", game.id)
         .eq("created_by", user.id);
@@ -293,7 +293,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   });
 
   // Add isGameClosed computed property
-  const isGameClosed = false; // Since we're now using open_registers/closed_registers tables
+  const isGameClosed = false; // Since we're now using open_cashier/closed_cashier tables
 
   return (
     <GameContext.Provider
