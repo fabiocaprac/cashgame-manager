@@ -13,7 +13,7 @@ interface GameContextType {
   game: Game | null;
   players: Player[];
   transactions: Transaction[];
-  createGame: () => Promise<Game>;
+  createGame: (name?: string, notes?: string) => Promise<Game>;
   addPlayer: (name: string) => Promise<void>;
   addTransaction: (values: any) => Promise<void>;
 }
@@ -121,12 +121,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   // Create new game
   const createGameMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (values: { name?: string; notes?: string } = {}) => {
       if (!user?.id) throw new Error("User not authenticated");
       
       const { data, error } = await supabase
         .from("games")
-        .insert([{ created_by: user.id }])
+        .insert([{ 
+          created_by: user.id,
+          name: values.name || null,
+          notes: values.notes || null,
+        }])
         .select()
         .single();
       
@@ -203,7 +207,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         game,
         players,
         transactions,
-        createGame: () => createGameMutation.mutateAsync(),
+        createGame: (name?: string, notes?: string) => 
+          createGameMutation.mutateAsync({ name, notes }),
         addPlayer: (name) => addPlayerMutation.mutateAsync(name),
         addTransaction: (values) => addTransactionMutation.mutateAsync(values),
       }}

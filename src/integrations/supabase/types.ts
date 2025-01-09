@@ -15,18 +15,24 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
+          name: string | null
+          notes: string | null
         }
         Insert: {
           closed_at?: string | null
           created_at?: string
           created_by: string
           id?: string
+          name?: string | null
+          notes?: string | null
         }
         Update: {
           closed_at?: string | null
           created_at?: string
           created_by?: string
           id?: string
+          name?: string | null
+          notes?: string | null
         }
         Relationships: [
           {

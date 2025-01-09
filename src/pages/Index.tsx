@@ -1,15 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { CashGameSummary } from "@/components/CashGameSummary";
 import { PlayerTable } from "@/components/PlayerTable";
 import { TransactionDialog } from "@/components/TransactionDialog";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import { PaymentMethod } from "@/types";
-import { calculatePlayerBalance } from "@/utils/balanceCalculations";
 import { PlusCircle, LogOut } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useGame } from "@/components/game/GameProvider";
+import { ClosedGamesTable } from "@/components/ClosedGamesTable";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const { signOut } = useAuth();
@@ -18,6 +21,23 @@ const Index = () => {
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [newGameName, setNewGameName] = useState("");
+  const [newGameNotes, setNewGameNotes] = useState("");
+
+  // Fetch closed games
+  const { data: closedGames = [] } = useQuery({
+    queryKey: ["closedGames"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("games")
+        .select("*")
+        .not("closed_at", "is", null)
+        .order("closed_at", { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const handleAddPlayer = () => {
     if (!newPlayerName.trim()) return;
@@ -28,6 +48,12 @@ const Index = () => {
   const handleViewHistory = (playerId: string) => {
     setSelectedPlayerId(playerId);
     setHistoryDialogOpen(true);
+  };
+
+  const handleCreateGame = async () => {
+    await createGame(newGameName, newGameNotes);
+    setNewGameName("");
+    setNewGameNotes("");
   };
 
   const selectedPlayer = players.find((p) => p.id === selectedPlayerId);
@@ -68,9 +94,30 @@ const Index = () => {
       </div>
 
       {!game ? (
-        <div className="flex flex-col items-center justify-center py-12">
+        <div className="flex flex-col items-center justify-center py-12 space-y-4">
           <h2 className="text-2xl font-semibold mb-4">Nenhum jogo em andamento</h2>
-          <Button onClick={() => createGame()}>Iniciar Novo Jogo</Button>
+          <div className="w-full max-w-md space-y-4">
+            <Input
+              placeholder="Nome do jogo"
+              value={newGameName}
+              onChange={(e) => setNewGameName(e.target.value)}
+            />
+            <Textarea
+              placeholder="Observações"
+              value={newGameNotes}
+              onChange={(e) => setNewGameNotes(e.target.value)}
+            />
+            <Button onClick={handleCreateGame} className="w-full">
+              Iniciar Novo Jogo
+            </Button>
+          </div>
+          
+          {closedGames.length > 0 && (
+            <div className="w-full mt-8">
+              <h3 className="text-xl font-semibold mb-4">Jogos Fechados</h3>
+              <ClosedGamesTable games={closedGames} />
+            </div>
+          )}
         </div>
       ) : (
         <>
