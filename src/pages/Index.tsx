@@ -1,122 +1,28 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
 import { CashGameSummary } from "@/components/CashGameSummary";
 import { PlayerTable } from "@/components/PlayerTable";
 import { TransactionDialog } from "@/components/TransactionDialog";
 import { TransactionHistory } from "@/components/TransactionHistory";
-import { Player, Transaction, PaymentMethod } from "@/types";
+import { PaymentMethod } from "@/types";
 import { calculatePlayerBalance } from "@/utils/balanceCalculations";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, LogOut } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useGame } from "@/components/game/GameProvider";
 
 const Index = () => {
+  const { signOut } = useAuth();
+  const { game, players, transactions, createGame, addPlayer, addTransaction } = useGame();
   const [newPlayerName, setNewPlayerName] = useState("");
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
-  const { toast } = useToast();
 
   const handleAddPlayer = () => {
-    if (!newPlayerName.trim()) {
-      toast({
-        title: "Erro",
-        description: "Digite o nome do jogador",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const newPlayer: Player = {
-      id: crypto.randomUUID(),
-      name: newPlayerName,
-      purchases: 0,
-      returns: 0,
-      cashPayments: 0,
-      cardPayments: 0,
-      pixPayments: 0,
-      finalBalance: 0,
-    };
-
-    setPlayers([...players, newPlayer]);
+    if (!newPlayerName.trim()) return;
+    addPlayer(newPlayerName);
     setNewPlayerName("");
-    toast({
-      title: "Sucesso",
-      description: "Jogador adicionado com sucesso",
-    });
-  };
-
-  const handleTransaction = (values: any) => {
-    const player = players.find((p) => p.id === values.playerId);
-    if (!player) return;
-
-    const transaction: Transaction = {
-      id: crypto.randomUUID(),
-      playerId: values.playerId,
-      type: values.type,
-      chips: values.chips,
-      payment: values.payment,
-      method: values.method as PaymentMethod,
-      timestamp: new Date(),
-    };
-
-    setTransactions([...transactions, transaction]);
-
-    const updatedPlayers = players.map((p) => {
-      if (p.id === values.playerId) {
-        let newPurchases = p.purchases;
-        let newReturns = p.returns;
-        let newCashPayments = p.cashPayments;
-        let newCardPayments = p.cardPayments;
-        let newPixPayments = p.pixPayments;
-
-        // Update chip transactions
-        if (values.type === "buy-in") {
-          newPurchases += values.chips;
-        } else if (values.type === "cash-out") {
-          newReturns += values.chips;
-        }
-
-        // Update payment method totals
-        if (values.payment > 0) {
-          switch (values.method) {
-            case "cash":
-              newCashPayments += values.payment;
-              break;
-            case "card":
-              newCardPayments += values.payment;
-              break;
-            case "pix":
-              newPixPayments += values.payment;
-              break;
-          }
-        }
-
-        const updatedPlayer = {
-          ...p,
-          purchases: newPurchases,
-          returns: newReturns,
-          cashPayments: newCashPayments,
-          cardPayments: newCardPayments,
-          pixPayments: newPixPayments,
-        };
-
-        // Calculate final balance using the new utility function
-        updatedPlayer.finalBalance = calculatePlayerBalance(updatedPlayer);
-
-        return updatedPlayer;
-      }
-      return p;
-    });
-
-    setPlayers(updatedPlayers);
-    setTransactionDialogOpen(false);
-    toast({
-      title: "Sucesso",
-      description: "Transação registrada com sucesso",
-    });
   };
 
   const handleViewHistory = (playerId: string) => {
@@ -153,53 +59,68 @@ const Index = () => {
 
   return (
     <div className="container mx-auto py-8 space-y-8">
-      <h1 className="text-4xl font-bold text-center mb-8">Cash Game</h1>
-
-      <div className="flex gap-4 items-center">
-        <Input
-          placeholder="Nome do novo jogador"
-          value={newPlayerName}
-          onChange={(e) => setNewPlayerName(e.target.value)}
-          className="max-w-xs"
-        />
-        <Button onClick={handleAddPlayer} size="icon">
-          <PlusCircle className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="secondary"
-          className="ml-auto"
-          onClick={() => setTransactionDialogOpen(true)}
-        >
-          Nova Transação
+      <div className="flex justify-between items-center">
+        <h1 className="text-4xl font-bold">Cash Game</h1>
+        <Button variant="outline" onClick={signOut}>
+          <LogOut className="h-4 w-4 mr-2" />
+          Sair
         </Button>
       </div>
 
-      <div className="glass-card p-6">
-        <PlayerTable players={players} onViewHistory={handleViewHistory} />
-      </div>
+      {!game ? (
+        <div className="flex flex-col items-center justify-center py-12">
+          <h2 className="text-2xl font-semibold mb-4">Nenhum jogo em andamento</h2>
+          <Button onClick={() => createGame()}>Iniciar Novo Jogo</Button>
+        </div>
+      ) : (
+        <>
+          <div className="flex gap-4 items-center">
+            <Input
+              placeholder="Nome do novo jogador"
+              value={newPlayerName}
+              onChange={(e) => setNewPlayerName(e.target.value)}
+              className="max-w-xs"
+            />
+            <Button onClick={handleAddPlayer} size="icon">
+              <PlusCircle className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="secondary"
+              className="ml-auto"
+              onClick={() => setTransactionDialogOpen(true)}
+            >
+              Nova Transação
+            </Button>
+          </div>
 
-      <CashGameSummary
-        chipsInPlay={totalPurchases - totalReturns}
-        pendingDebits={totalPurchases}
-        pendingCredits={totalReturns}
-        finalBalance={totalFinalBalance}
-        movements={movements}
-      />
+          <div className="glass-card p-6">
+            <PlayerTable players={players} onViewHistory={handleViewHistory} />
+          </div>
 
-      <TransactionDialog
-        open={transactionDialogOpen}
-        onOpenChange={setTransactionDialogOpen}
-        players={players}
-        onSubmit={handleTransaction}
-      />
+          <CashGameSummary
+            chipsInPlay={totalPurchases - totalReturns}
+            pendingDebits={totalPurchases}
+            pendingCredits={totalReturns}
+            finalBalance={totalFinalBalance}
+            movements={movements}
+          />
 
-      {selectedPlayer && (
-        <TransactionHistory
-          open={historyDialogOpen}
-          onOpenChange={setHistoryDialogOpen}
-          transactions={playerTransactions}
-          playerName={selectedPlayer.name}
-        />
+          <TransactionDialog
+            open={transactionDialogOpen}
+            onOpenChange={setTransactionDialogOpen}
+            players={players}
+            onSubmit={addTransaction}
+          />
+
+          {selectedPlayer && (
+            <TransactionHistory
+              open={historyDialogOpen}
+              onOpenChange={setHistoryDialogOpen}
+              transactions={playerTransactions}
+              playerName={selectedPlayer.name}
+            />
+          )}
+        </>
       )}
     </div>
   );
