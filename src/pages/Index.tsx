@@ -5,6 +5,7 @@ import { CashGameSummary } from "@/components/CashGameSummary";
 import { PlayerTable } from "@/components/PlayerTable";
 import { TransactionDialog } from "@/components/TransactionDialog";
 import { TransactionHistory } from "@/components/TransactionHistory";
+import { CloseGameDialog } from "@/components/CloseGameDialog";
 import { PaymentMethod } from "@/types";
 import { PlusCircle, LogOut, History, XCircle } from "lucide-react";
 import { useState } from "react";
@@ -30,6 +31,7 @@ const Index = () => {
   const [newPlayerName, setNewPlayerName] = useState("");
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [closeGameDialogOpen, setCloseGameDialogOpen] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [newGameName, setNewGameName] = useState("");
   const [newGameNotes, setNewGameNotes] = useState("");
@@ -174,7 +176,7 @@ const Index = () => {
             </Button>
             <Button
               variant="destructive"
-              onClick={handleCloseGame}
+              onClick={() => setCloseGameDialogOpen(true)}
             >
               <XCircle className="h-4 w-4 mr-2" />
               Encerrar Caixa
@@ -198,6 +200,12 @@ const Index = () => {
             onOpenChange={setTransactionDialogOpen}
             players={players}
             onSubmit={addTransaction}
+          />
+
+          <CloseGameDialog
+            open={closeGameDialogOpen}
+            onOpenChange={setCloseGameDialogOpen}
+            onConfirm={handleCloseGame}
           />
 
           {selectedPlayer && (
