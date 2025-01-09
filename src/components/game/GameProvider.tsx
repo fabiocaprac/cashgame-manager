@@ -18,6 +18,7 @@ interface GameContextType {
   addPlayer: (name: string) => Promise<void>;
   addTransaction: (values: any) => Promise<void>;
   isLoading: boolean;
+  isGameClosed: boolean;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -177,6 +178,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const addPlayerMutation = useMutation({
     mutationFn: async (name: string) => {
       if (!game?.id) throw new Error("No game selected");
+      if (game.closed_at) throw new Error("Game is closed");
       
       const { error } = await supabase
         .from("players")
@@ -191,6 +193,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         description: "Jogador adicionado com sucesso",
       });
     },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   });
 
   // Add new transaction
@@ -202,6 +211,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       payment: number;
       method: "cash" | "card" | "pix" | "voucher";
     }) => {
+      if (game.closed_at) throw new Error("Game is closed");
+      
       const { error } = await supabase
         .from("transactions")
         .insert([{
@@ -223,7 +234,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         description: "Transação registrada com sucesso",
       });
     },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   });
+
+  // Add isGameClosed computed property
+  const isGameClosed = game?.closed_at !== null;
 
   return (
     <GameContext.Provider
@@ -237,6 +258,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         closeGame: () => closeGameMutation.mutateAsync(),
         addPlayer: (name) => addPlayerMutation.mutateAsync(name),
         addTransaction: (values) => addTransactionMutation.mutateAsync(values),
+        isGameClosed,
       }}
     >
       {children}
@@ -250,4 +272,4 @@ export const useGame = () => {
     throw new Error("useGame must be used within a GameProvider");
   }
   return context;
-};
+}

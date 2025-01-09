@@ -26,7 +26,8 @@ const Index = () => {
     closeGame,
     addPlayer, 
     addTransaction,
-    isLoading 
+    isLoading,
+    isGameClosed 
   } = useGame();
   
   const [newPlayerName, setNewPlayerName] = useState("");
@@ -178,12 +179,12 @@ const Index = () => {
               value={newPlayerName}
               onChange={(e) => setNewPlayerName(e.target.value)}
               className="max-w-xs"
-              disabled={game.closed_at && !isEditAuthorized}
+              disabled={isGameClosed && !isEditAuthorized}
             />
             <Button 
               onClick={handleAddPlayer} 
               size="icon"
-              disabled={game.closed_at && !isEditAuthorized}
+              disabled={isGameClosed && !isEditAuthorized}
             >
               <PlusCircle className="h-4 w-4" />
             </Button>
@@ -191,11 +192,11 @@ const Index = () => {
               variant="secondary"
               className="ml-auto"
               onClick={handleNewTransaction}
-              disabled={game.closed_at && !isEditAuthorized}
+              disabled={isGameClosed && !isEditAuthorized}
             >
               Nova Transação
             </Button>
-            {!game.closed_at && (
+            {!isGameClosed && (
               <Button
                 variant="destructive"
                 onClick={() => setCloseGameDialogOpen(true)}
@@ -223,6 +224,7 @@ const Index = () => {
             onOpenChange={setTransactionDialogOpen}
             players={players}
             onSubmit={addTransaction}
+            isGameClosed={isGameClosed}
           />
 
           <CloseGameDialog
