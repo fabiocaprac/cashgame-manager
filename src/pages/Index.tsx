@@ -6,6 +6,7 @@ import { PlayerTable } from "@/components/PlayerTable";
 import { TransactionDialog } from "@/components/TransactionDialog";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import { CloseGameDialog } from "@/components/CloseGameDialog";
+import { EditAuthDialog } from "@/components/EditAuthDialog";
 import { PaymentMethod } from "@/types";
 import { PlusCircle, LogOut, History, XCircle } from "lucide-react";
 import { useState } from "react";
@@ -32,6 +33,8 @@ const Index = () => {
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [closeGameDialogOpen, setCloseGameDialogOpen] = useState(false);
+  const [editAuthDialogOpen, setEditAuthDialogOpen] = useState(false);
+  const [isEditAuthorized, setIsEditAuthorized] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [newGameName, setNewGameName] = useState("");
   const [newGameNotes, setNewGameNotes] = useState("");
@@ -54,6 +57,10 @@ const Index = () => {
 
   const handleAddPlayer = () => {
     if (!newPlayerName.trim()) return;
+    if (game?.closed_at && !isEditAuthorized) {
+      setEditAuthDialogOpen(true);
+      return;
+    }
     addPlayer(newPlayerName);
     setNewPlayerName("");
   };
@@ -72,6 +79,14 @@ const Index = () => {
   const handleCloseGame = async () => {
     await closeGame();
     setShowClosedGames(true);
+  };
+
+  const handleNewTransaction = () => {
+    if (game?.closed_at && !isEditAuthorized) {
+      setEditAuthDialogOpen(true);
+      return;
+    }
+    setTransactionDialogOpen(true);
   };
 
   const selectedPlayer = players.find((p) => p.id === selectedPlayerId);
@@ -163,24 +178,32 @@ const Index = () => {
               value={newPlayerName}
               onChange={(e) => setNewPlayerName(e.target.value)}
               className="max-w-xs"
+              disabled={game.closed_at && !isEditAuthorized}
             />
-            <Button onClick={handleAddPlayer} size="icon">
+            <Button 
+              onClick={handleAddPlayer} 
+              size="icon"
+              disabled={game.closed_at && !isEditAuthorized}
+            >
               <PlusCircle className="h-4 w-4" />
             </Button>
             <Button
               variant="secondary"
               className="ml-auto"
-              onClick={() => setTransactionDialogOpen(true)}
+              onClick={handleNewTransaction}
+              disabled={game.closed_at && !isEditAuthorized}
             >
               Nova Transação
             </Button>
-            <Button
-              variant="destructive"
-              onClick={() => setCloseGameDialogOpen(true)}
-            >
-              <XCircle className="h-4 w-4 mr-2" />
-              Encerrar Caixa
-            </Button>
+            {!game.closed_at && (
+              <Button
+                variant="destructive"
+                onClick={() => setCloseGameDialogOpen(true)}
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Encerrar Caixa
+              </Button>
+            )}
           </div>
 
           <div className="glass-card p-6">
@@ -206,6 +229,12 @@ const Index = () => {
             open={closeGameDialogOpen}
             onOpenChange={setCloseGameDialogOpen}
             onConfirm={handleCloseGame}
+          />
+
+          <EditAuthDialog
+            open={editAuthDialogOpen}
+            onOpenChange={setEditAuthDialogOpen}
+            onConfirm={() => setIsEditAuthorized(true)}
           />
 
           {selectedPlayer && (
