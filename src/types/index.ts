@@ -12,7 +12,7 @@ export type Player = {
 export type Transaction = {
   id: string;
   playerId: string;
-  type: "buy-in" | "cash-out";
+  type: "buy-in" | "cash-out" | "refund";
   chips: number;
   payment: number;
   method: PaymentMethod;

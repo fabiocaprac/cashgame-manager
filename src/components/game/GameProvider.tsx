@@ -75,17 +75,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       if (!currentGameId) return [];
       const { data, error } = await supabase
         .from("transactions")
-        .select("*")
-        .eq("game_id", currentGameId);
+        .select("*, player:players(game_id)")
+        .eq("player.game_id", currentGameId);
       
       if (error) throw error;
       return data.map((transaction: Tables['transactions']['Row']) => ({
         id: transaction.id,
         playerId: transaction.player_id,
-        type: transaction.type,
+        type: transaction.type as Transaction["type"],
         chips: transaction.chips,
         payment: transaction.payment,
-        method: transaction.method,
+        method: transaction.method as Transaction["method"],
         timestamp: new Date(transaction.created_at),
       }));
     },
@@ -97,24 +97,20 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     mutationFn: async () => {
       if (!user?.id) throw new Error("User not authenticated");
       
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("games")
         .insert([{ created_by: user.id }])
         .select()
         .single();
       
       if (error) throw error;
-      return data;
     },
-    onSuccess: (data) => {
-      if (data) {
-        setCurrentGameId(data.id);
-        queryClient.invalidateQueries({ queryKey: ["game"] });
-        toast({
-          title: "Sucesso",
-          description: "Novo jogo criado com sucesso",
-        });
-      }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["game"] });
+      toast({
+        title: "Sucesso",
+        description: "Novo jogo criado com sucesso",
+      });
     },
   });
 
@@ -123,14 +119,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     mutationFn: async (name: string) => {
       if (!currentGameId) throw new Error("No game selected");
       
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("players")
         .insert([{ game_id: currentGameId, name }])
         .select()
         .single();
       
       if (error) throw error;
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["players"] });
@@ -145,12 +140,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const addTransactionMutation = useMutation({
     mutationFn: async (values: {
       playerId: string;
-      type: string;
+      type: "buy-in" | "cash-out" | "refund";
       chips: number;
       payment: number;
-      method: string;
+      method: "cash" | "card" | "pix" | "voucher";
     }) => {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("transactions")
         .insert([{
           player_id: values.playerId,
@@ -163,7 +158,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         .single();
       
       if (error) throw error;
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
