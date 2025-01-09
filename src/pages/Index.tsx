@@ -88,7 +88,7 @@ const Index = () => {
 
   const selectedPlayer = players.find((p) => p.id === selectedPlayerId);
   const playerTransactions = transactions.filter(
-    (t) => t.playerId === selectedPlayerId
+    (t) => t.player_id === selectedPlayerId
   );
 
   const totalPurchases = players.reduce((sum, p) => sum + p.purchases, 0);

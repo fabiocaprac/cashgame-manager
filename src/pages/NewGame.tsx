@@ -1,46 +1,42 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useGame } from "@/components/game/GameProvider";
-import { ArrowLeft } from "lucide-react";
+import { useState } from "react";
 
 export default function NewGame() {
-  const navigate = useNavigate();
   const { createGame } = useGame();
-  const [newGameName, setNewGameName] = useState("");
-  const [newGameNotes, setNewGameNotes] = useState("");
+  const [name, setName] = useState("");
+  const [notes, setNotes] = useState("");
 
-  const handleCreateGame = async () => {
-    const game = await createGame(newGameName, newGameNotes);
-    navigate(`/games/${game.id}`);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await createGame(name, notes);
   };
 
   return (
-    <div className="container mx-auto py-8 space-y-8">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={() => navigate("/")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar
-        </Button>
-        <h1 className="text-4xl font-bold">Novo Caixa</h1>
-      </div>
-
+    <div className="container mx-auto py-8">
       <div className="max-w-md mx-auto space-y-4">
-        <Input
-          placeholder="Nome do caixa"
-          value={newGameName}
-          onChange={(e) => setNewGameName(e.target.value)}
-        />
-        <Textarea
-          placeholder="Observações"
-          value={newGameNotes}
-          onChange={(e) => setNewGameNotes(e.target.value)}
-        />
-        <Button onClick={handleCreateGame} className="w-full">
-          Criar Novo Caixa
-        </Button>
+        <h1 className="text-2xl font-bold">Novo Jogo</h1>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Input
+              placeholder="Nome do jogo"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div>
+            <Textarea
+              placeholder="Observações"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+          <Button type="submit" className="w-full">
+            Criar Jogo
+          </Button>
+        </form>
       </div>
     </div>
   );

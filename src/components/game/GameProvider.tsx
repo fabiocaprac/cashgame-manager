@@ -240,7 +240,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         .from("transactions")
         .insert([{
           player_id: values.player_id,
-          type: values.type,
+          type: values.type as "buy-in" | "cash-out" | "refund",
           chips: values.chips,
           payment: values.payment,
           method: values.method,
@@ -251,7 +251,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error;
 
-      setTransactions([...transactions, transaction]);
+      setTransactions([...transactions, transaction as Transaction]);
       await fetchGameData(); // Refresh all data to ensure consistency
     } catch (error: any) {
       console.error("Error adding transaction:", error);

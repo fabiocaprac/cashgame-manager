@@ -45,7 +45,7 @@ export function TransactionHistory({
               {transactions.map((transaction) => (
                 <tr key={transaction.id} className="border-b border-white/10">
                   <td className="py-3 px-4">
-                    {format(transaction.timestamp, "dd/MM/yyyy, HH:mm:ss")}
+                    {format(new Date(transaction.created_at), "dd/MM/yyyy, HH:mm:ss")}
                   </td>
                   <td className="py-3 px-4">
                     {transaction.type === "buy-in" ? "Compra" : "Devolução"}
