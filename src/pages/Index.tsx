@@ -86,7 +86,7 @@ const Index = () => {
 
   const handleCloseGame = async () => {
     await closeGame();
-    setShowClosedGames(true);
+    navigate("/");
     toast({
       title: "Sucesso",
       description: "Caixa encerrado com sucesso",
