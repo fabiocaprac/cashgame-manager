@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -27,10 +28,10 @@ import * as z from "zod";
 
 const formSchema = z.object({
   playerId: z.string().min(1, "Selecione um jogador"),
-  type: z.enum(["buy-in", "cash-out", "refund"]),
+  type: z.enum(["buy-in", "cash-out", "refund"] as const),
   chips: z.number().min(0),
   payment: z.number().min(0),
-  method: z.enum(["cash", "card", "pix", "voucher"]),
+  method: z.enum(["cash", "card", "pix", "voucher"] as const),
 });
 
 interface TransactionDialogProps {
@@ -67,6 +68,9 @@ export function TransactionDialog({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Registrar Transação</DialogTitle>
+          <DialogDescription>
+            Registre uma nova transação para o jogador selecionado
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
