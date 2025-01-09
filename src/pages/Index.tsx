@@ -6,7 +6,7 @@ import { PlayerTable } from "@/components/PlayerTable";
 import { TransactionDialog } from "@/components/TransactionDialog";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import { PaymentMethod } from "@/types";
-import { PlusCircle, LogOut } from "lucide-react";
+import { PlusCircle, LogOut, History } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useGame } from "@/components/game/GameProvider";
@@ -23,6 +23,7 @@ const Index = () => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [newGameName, setNewGameName] = useState("");
   const [newGameNotes, setNewGameNotes] = useState("");
+  const [showClosedGames, setShowClosedGames] = useState(false);
 
   // Fetch closed games
   const { data: closedGames = [] } = useQuery({
@@ -87,36 +88,44 @@ const Index = () => {
     <div className="container mx-auto py-8 space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-4xl font-bold">Cash Game</h1>
-        <Button variant="outline" onClick={signOut}>
-          <LogOut className="h-4 w-4 mr-2" />
-          Sair
-        </Button>
+        <div className="flex gap-4">
+          <Button variant="outline" onClick={() => setShowClosedGames(!showClosedGames)}>
+            <History className="h-4 w-4 mr-2" />
+            {showClosedGames ? "Voltar" : "Ver Caixas Fechados"}
+          </Button>
+          <Button variant="outline" onClick={signOut}>
+            <LogOut className="h-4 w-4 mr-2" />
+            Sair
+          </Button>
+        </div>
       </div>
 
       {!game ? (
         <div className="flex flex-col items-center justify-center py-12 space-y-4">
-          <h2 className="text-2xl font-semibold mb-4">Nenhum jogo em andamento</h2>
-          <div className="w-full max-w-md space-y-4">
-            <Input
-              placeholder="Nome do jogo"
-              value={newGameName}
-              onChange={(e) => setNewGameName(e.target.value)}
-            />
-            <Textarea
-              placeholder="Observações"
-              value={newGameNotes}
-              onChange={(e) => setNewGameNotes(e.target.value)}
-            />
-            <Button onClick={handleCreateGame} className="w-full">
-              Iniciar Novo Jogo
-            </Button>
-          </div>
-          
-          {closedGames.length > 0 && (
-            <div className="w-full mt-8">
-              <h3 className="text-xl font-semibold mb-4">Jogos Fechados</h3>
+          {showClosedGames ? (
+            <div className="w-full">
+              <h2 className="text-2xl font-semibold mb-4">Caixas Fechados</h2>
               <ClosedGamesTable games={closedGames} />
             </div>
+          ) : (
+            <>
+              <h2 className="text-2xl font-semibold mb-4">Nenhum jogo em andamento</h2>
+              <div className="w-full max-w-md space-y-4">
+                <Input
+                  placeholder="Nome do jogo"
+                  value={newGameName}
+                  onChange={(e) => setNewGameName(e.target.value)}
+                />
+                <Textarea
+                  placeholder="Observações"
+                  value={newGameNotes}
+                  onChange={(e) => setNewGameNotes(e.target.value)}
+                />
+                <Button onClick={handleCreateGame} className="w-full">
+                  Iniciar Novo Jogo
+                </Button>
+              </div>
+            </>
           )}
         </div>
       ) : (
