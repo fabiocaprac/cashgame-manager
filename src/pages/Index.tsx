@@ -43,21 +43,6 @@ const Index = () => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [newGameName, setNewGameName] = useState("");
   const [newGameNotes, setNewGameNotes] = useState("");
-  const [showClosedGames, setShowClosedGames] = useState(false);
-
-  const { data: closedGames = [] } = useQuery({
-    queryKey: ["closedGames"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("games")
-        .select("*")
-        .not("closed_at", "is", null)
-        .order("closed_at", { ascending: false });
-      
-      if (error) throw error;
-      return data;
-    },
-  });
 
   const handleAddPlayer = () => {
     if (!newPlayerName.trim()) return;
@@ -149,10 +134,6 @@ const Index = () => {
           <h1 className="text-4xl font-bold">Cash Game</h1>
         </div>
         <div className="flex gap-4">
-          <Button variant="outline" onClick={() => setShowClosedGames(!showClosedGames)}>
-            <History className="h-4 w-4 mr-2" />
-            {showClosedGames ? "Voltar" : "Ver Caixas Fechados"}
-          </Button>
           <Button variant="outline" onClick={signOut}>
             <LogOut className="h-4 w-4 mr-2" />
             Sair
@@ -162,31 +143,22 @@ const Index = () => {
 
       {!game ? (
         <div className="flex flex-col items-center justify-center py-12 space-y-4">
-          {showClosedGames ? (
-            <div className="w-full">
-              <h2 className="text-2xl font-semibold mb-4">Caixas Fechados</h2>
-              <ClosedGamesTable games={closedGames} />
-            </div>
-          ) : (
-            <>
-              <h2 className="text-2xl font-semibold mb-4">Nenhum jogo em andamento</h2>
-              <div className="w-full max-w-md space-y-4">
-                <Input
-                  placeholder="Nome do jogo"
-                  value={newGameName}
-                  onChange={(e) => setNewGameName(e.target.value)}
-                />
-                <Textarea
-                  placeholder="Observações"
-                  value={newGameNotes}
-                  onChange={(e) => setNewGameNotes(e.target.value)}
-                />
-                <Button onClick={handleCreateGame} className="w-full">
-                  Iniciar Novo Jogo
-                </Button>
-              </div>
-            </>
-          )}
+          <h2 className="text-2xl font-semibold mb-4">Nenhum jogo em andamento</h2>
+          <div className="w-full max-w-md space-y-4">
+            <Input
+              placeholder="Nome do jogo"
+              value={newGameName}
+              onChange={(e) => setNewGameName(e.target.value)}
+            />
+            <Textarea
+              placeholder="Observações"
+              value={newGameNotes}
+              onChange={(e) => setNewGameNotes(e.target.value)}
+            />
+            <Button onClick={handleCreateGame} className="w-full">
+              Iniciar Novo Jogo
+            </Button>
+          </div>
         </div>
       ) : (
         <>
