@@ -21,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PaymentMethod } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -34,11 +33,13 @@ const formSchema = z.object({
   method: z.enum(["cash", "card", "pix", "voucher"] as const),
 });
 
+type TransactionFormValues = z.infer<typeof formSchema>;
+
 interface TransactionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   players: { id: string; name: string }[];
-  onSubmit: (values: z.infer<typeof formSchema>) => void;
+  onSubmit: (values: TransactionFormValues) => Promise<void>;
 }
 
 export function TransactionDialog({
@@ -47,7 +48,7 @@ export function TransactionDialog({
   players,
   onSubmit,
 }: TransactionDialogProps) {
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<TransactionFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       type: "buy-in",
@@ -57,10 +58,14 @@ export function TransactionDialog({
     },
   });
 
-  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
-    await onSubmit(values);
-    form.reset();
-    onOpenChange(false);
+  const handleSubmit = async (values: TransactionFormValues) => {
+    try {
+      await onSubmit(values);
+      form.reset();
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error submitting transaction:", error);
+    }
   };
 
   return (
