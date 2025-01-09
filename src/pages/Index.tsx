@@ -43,7 +43,6 @@ const Index = () => {
   const [newGameNotes, setNewGameNotes] = useState("");
   const [showClosedGames, setShowClosedGames] = useState(false);
 
-  // Fetch closed games
   const { data: closedGames = [] } = useQuery({
     queryKey: ["closedGames"],
     queryFn: async () => {
@@ -90,17 +89,11 @@ const Index = () => {
       title: "Sucesso",
       description: "Caixa encerrado com sucesso",
     });
-    // Immediately close any open transaction dialog
-    setTransactionDialogOpen(false);
   };
 
   const handleNewTransaction = () => {
-    if (isGameClosed) {
-      toast({
-        title: "Erro",
-        description: "Não é possível adicionar transações em um caixa fechado",
-        variant: "destructive",
-      });
+    if (isGameClosed && !isEditAuthorized) {
+      setEditAuthDialogOpen(true);
       return;
     }
     setTransactionDialogOpen(true);
@@ -206,9 +199,8 @@ const Index = () => {
             </Button>
             <Button
               variant="secondary"
-              className={`ml-auto ${isGameClosed ? "opacity-50 cursor-not-allowed" : ""}`}
+              className={`ml-auto ${isGameClosed && !isEditAuthorized ? "opacity-50 cursor-not-allowed" : ""}`}
               onClick={handleNewTransaction}
-              disabled={isGameClosed}
             >
               Nova Transação
             </Button>
