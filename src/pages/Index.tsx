@@ -90,6 +90,8 @@ const Index = () => {
       title: "Sucesso",
       description: "Caixa encerrado com sucesso",
     });
+    // Immediately close any open transaction dialog
+    setTransactionDialogOpen(false);
   };
 
   const handleNewTransaction = () => {
@@ -204,7 +206,7 @@ const Index = () => {
             </Button>
             <Button
               variant="secondary"
-              className="ml-auto"
+              className={`ml-auto ${isGameClosed ? "opacity-50 cursor-not-allowed" : ""}`}
               onClick={handleNewTransaction}
               disabled={isGameClosed}
             >
