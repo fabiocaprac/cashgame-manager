@@ -44,7 +44,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   });
 
   // Fetch players for current game
-  const { data: players = [] } = useQuery({
+  const { data: rawPlayers = [] } = useQuery({
     queryKey: ["players", currentGameId],
     queryFn: async () => {
       if (!currentGameId) return [];
@@ -54,16 +54,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         .eq("game_id", currentGameId);
       
       if (error) throw error;
-      return data.map((player: Tables['players']['Row']) => ({
-        id: player.id,
-        name: player.name,
-        purchases: 0,
-        returns: 0,
-        cashPayments: 0,
-        cardPayments: 0,
-        pixPayments: 0,
-        finalBalance: 0,
-      }));
+      return data;
     },
     enabled: !!currentGameId,
   });
@@ -90,6 +81,42 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }));
     },
     enabled: !!currentGameId,
+  });
+
+  // Calculate player balances from transactions
+  const players = rawPlayers.map((player) => {
+    const playerTransactions = transactions.filter(t => t.playerId === player.id);
+    
+    const purchases = playerTransactions
+      .filter(t => t.type === "buy-in")
+      .reduce((sum, t) => sum + t.chips, 0);
+    
+    const returns = playerTransactions
+      .filter(t => t.type === "cash-out")
+      .reduce((sum, t) => sum + t.chips, 0);
+    
+    const cashPayments = playerTransactions
+      .filter(t => t.method === "cash")
+      .reduce((sum, t) => sum + t.payment, 0);
+    
+    const cardPayments = playerTransactions
+      .filter(t => t.method === "card")
+      .reduce((sum, t) => sum + t.payment, 0);
+    
+    const pixPayments = playerTransactions
+      .filter(t => t.method === "pix")
+      .reduce((sum, t) => sum + t.payment, 0);
+
+    return {
+      id: player.id,
+      name: player.name,
+      purchases,
+      returns,
+      cashPayments,
+      cardPayments,
+      pixPayments,
+      finalBalance: -purchases + returns + cashPayments + cardPayments + pixPayments,
+    };
   });
 
   // Create new game
