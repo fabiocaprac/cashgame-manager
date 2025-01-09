@@ -41,15 +41,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         .eq("created_by", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       
-      if (error && error.code !== 'PGRST116') throw error;
-      return data || null;
+      if (error) throw error;
+      return data;
     },
     enabled: !!user?.id,
   });
 
-  // Fetch players for current game
   const { data: rawPlayers = [], isLoading: isPlayersLoading } = useQuery({
     queryKey: ["players", game?.id],
     queryFn: async () => {
