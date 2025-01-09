@@ -21,9 +21,10 @@ import { useState } from "react";
 interface ClosedGame {
   id: string;
   name: string | null;
-  notes: string | null;
   created_at: string;
-  closed_at: string | null;
+  closed_at: string;
+  last_transaction_at: string | null;
+  created_by: string;
 }
 
 interface ClosedGamesTableProps {
@@ -37,8 +38,7 @@ export function ClosedGamesTable({ games }: ClosedGamesTableProps) {
 
   // Filter games based on search term
   const filteredGames = games.filter(game => 
-    game.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    game.notes?.toLowerCase().includes(searchTerm.toLowerCase())
+    game.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Calculate pagination
@@ -85,7 +85,6 @@ export function ClosedGamesTable({ games }: ClosedGamesTableProps) {
             <TableHead>Nome</TableHead>
             <TableHead>Criação</TableHead>
             <TableHead>Fechamento</TableHead>
-            <TableHead>Observações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -98,17 +97,14 @@ export function ClosedGamesTable({ games }: ClosedGamesTableProps) {
                 <span className="text-sm text-muted-foreground">CAIXA</span>
               </TableCell>
               <TableCell>
-                {game.closed_at ? (
+                {game.closed_at && (
                   <>
                     {format(new Date(game.closed_at), "dd/MM/yyyy - HH:mm")}
                     <br />
                     <span className="text-sm text-muted-foreground">CAIXA</span>
                   </>
-                ) : (
-                  "-"
                 )}
               </TableCell>
-              <TableCell>{game.notes || "-"}</TableCell>
             </TableRow>
           ))}
         </TableBody>
