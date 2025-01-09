@@ -203,6 +203,11 @@ const Index = () => {
               onClick={handleNewTransaction}
             >
               Nova Transação
+              {isGameClosed && !isEditAuthorized && (
+                <span className="ml-2 text-xs text-muted-foreground">
+                  (Requer Autorização)
+                </span>
+              )}
             </Button>
             {!isGameClosed && (
               <Button
