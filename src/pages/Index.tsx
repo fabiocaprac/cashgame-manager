@@ -8,7 +8,7 @@ import { TransactionHistory } from "@/components/TransactionHistory";
 import { CloseGameDialog } from "@/components/CloseGameDialog";
 import { EditAuthDialog } from "@/components/EditAuthDialog";
 import { PaymentMethod } from "@/types";
-import { PlusCircle, LogOut, History, XCircle } from "lucide-react";
+import { PlusCircle, LogOut, History, XCircle, ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useGame } from "@/components/game/GameProvider";
@@ -16,8 +16,10 @@ import { ClosedGamesTable } from "@/components/ClosedGamesTable";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
+  const navigate = useNavigate();
   const { signOut } = useAuth();
   const { toast } = useToast();
   const { 
@@ -139,7 +141,13 @@ const Index = () => {
   return (
     <div className="container mx-auto py-8 space-y-8">
       <div className="flex justify-between items-center">
-        <h1 className="text-4xl font-bold">Cash Game</h1>
+        <div className="flex items-center gap-4">
+          <Button variant="outline" onClick={() => navigate("/")}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar para Dashboard
+          </Button>
+          <h1 className="text-4xl font-bold">Cash Game</h1>
+        </div>
         <div className="flex gap-4">
           <Button variant="outline" onClick={() => setShowClosedGames(!showClosedGames)}>
             <History className="h-4 w-4 mr-2" />
