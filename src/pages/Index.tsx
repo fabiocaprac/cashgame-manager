@@ -15,9 +15,11 @@ import { useGame } from "@/components/game/GameProvider";
 import { ClosedGamesTable } from "@/components/ClosedGamesTable";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
   const { signOut } = useAuth();
+  const { toast } = useToast();
   const { 
     game, 
     players, 
@@ -58,8 +60,12 @@ const Index = () => {
 
   const handleAddPlayer = () => {
     if (!newPlayerName.trim()) return;
-    if (game?.closed_at && !isEditAuthorized) {
-      setEditAuthDialogOpen(true);
+    if (isGameClosed) {
+      toast({
+        title: "Erro",
+        description: "Não é possível adicionar jogadores em um caixa fechado",
+        variant: "destructive",
+      });
       return;
     }
     addPlayer(newPlayerName);
@@ -80,11 +86,19 @@ const Index = () => {
   const handleCloseGame = async () => {
     await closeGame();
     setShowClosedGames(true);
+    toast({
+      title: "Sucesso",
+      description: "Caixa encerrado com sucesso",
+    });
   };
 
   const handleNewTransaction = () => {
-    if (game?.closed_at && !isEditAuthorized) {
-      setEditAuthDialogOpen(true);
+    if (isGameClosed) {
+      toast({
+        title: "Erro",
+        description: "Não é possível adicionar transações em um caixa fechado",
+        variant: "destructive",
+      });
       return;
     }
     setTransactionDialogOpen(true);
@@ -179,12 +193,12 @@ const Index = () => {
               value={newPlayerName}
               onChange={(e) => setNewPlayerName(e.target.value)}
               className="max-w-xs"
-              disabled={isGameClosed && !isEditAuthorized}
+              disabled={isGameClosed}
             />
             <Button 
               onClick={handleAddPlayer} 
               size="icon"
-              disabled={isGameClosed && !isEditAuthorized}
+              disabled={isGameClosed}
             >
               <PlusCircle className="h-4 w-4" />
             </Button>
@@ -192,7 +206,7 @@ const Index = () => {
               variant="secondary"
               className="ml-auto"
               onClick={handleNewTransaction}
-              disabled={isGameClosed && !isEditAuthorized}
+              disabled={isGameClosed}
             >
               Nova Transação
             </Button>
