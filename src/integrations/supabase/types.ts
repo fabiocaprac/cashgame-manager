@@ -9,7 +9,120 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      games: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          created_by: string
+          id: string
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "games_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      players: {
+        Row: {
+          created_at: string
+          game_id: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          game_id: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          game_id?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "players_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string | null
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          name?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          chips: number
+          created_at: string
+          id: string
+          method: string
+          payment: number
+          player_id: string
+          type: string
+        }
+        Insert: {
+          chips: number
+          created_at?: string
+          id?: string
+          method: string
+          payment: number
+          player_id: string
+          type: string
+        }
+        Update: {
+          chips?: number
+          created_at?: string
+          id?: string
+          method?: string
+          payment?: number
+          player_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

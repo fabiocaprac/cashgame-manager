@@ -4,13 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "../auth/AuthProvider";
 import { useToast } from "@/components/ui/use-toast";
 import { Player, Transaction } from "@/types";
+import { Database } from "@/integrations/supabase/types";
 
-interface Game {
-  id: string;
-  created_by: string;
-  created_at: string;
-  closed_at: string | null;
-}
+type Tables = Database['public']['Tables'];
+type Game = Tables['games']['Row'];
 
 interface GameContextType {
   game: Game | null;
@@ -57,7 +54,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         .eq("game_id", currentGameId);
       
       if (error) throw error;
-      return data.map((player: any) => ({
+      return data.map((player: Tables['players']['Row']) => ({
         id: player.id,
         name: player.name,
         purchases: 0,
@@ -82,7 +79,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         .eq("game_id", currentGameId);
       
       if (error) throw error;
-      return data.map((transaction: any) => ({
+      return data.map((transaction: Tables['transactions']['Row']) => ({
         id: transaction.id,
         playerId: transaction.player_id,
         type: transaction.type,
@@ -98,9 +95,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   // Create new game
   const createGameMutation = useMutation({
     mutationFn: async () => {
+      if (!user?.id) throw new Error("User not authenticated");
+      
       const { data, error } = await supabase
         .from("games")
-        .insert([{ created_by: user?.id }])
+        .insert([{ created_by: user.id }])
         .select()
         .single();
       
@@ -108,18 +107,22 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       return data;
     },
     onSuccess: (data) => {
-      setCurrentGameId(data.id);
-      queryClient.invalidateQueries({ queryKey: ["game"] });
-      toast({
-        title: "Sucesso",
-        description: "Novo jogo criado com sucesso",
-      });
+      if (data) {
+        setCurrentGameId(data.id);
+        queryClient.invalidateQueries({ queryKey: ["game"] });
+        toast({
+          title: "Sucesso",
+          description: "Novo jogo criado com sucesso",
+        });
+      }
     },
   });
 
   // Add new player
   const addPlayerMutation = useMutation({
     mutationFn: async (name: string) => {
+      if (!currentGameId) throw new Error("No game selected");
+      
       const { data, error } = await supabase
         .from("players")
         .insert([{ game_id: currentGameId, name }])
@@ -140,7 +143,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   // Add new transaction
   const addTransactionMutation = useMutation({
-    mutationFn: async (values: any) => {
+    mutationFn: async (values: {
+      playerId: string;
+      type: string;
+      chips: number;
+      payment: number;
+      method: string;
+    }) => {
       const { data, error } = await supabase
         .from("transactions")
         .insert([{
