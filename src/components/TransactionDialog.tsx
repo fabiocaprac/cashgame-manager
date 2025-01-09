@@ -51,8 +51,16 @@ export function TransactionDialog({
     defaultValues: {
       type: "buy-in",
       method: "cash",
+      chips: 0,
+      payment: 0,
     },
   });
+
+  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+    await onSubmit(values);
+    form.reset();
+    onOpenChange(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -61,7 +69,7 @@ export function TransactionDialog({
           <DialogTitle>Registrar Transação</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="playerId"
