@@ -155,26 +155,55 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     mutationFn: async () => {
       if (!game?.id || !user?.id) throw new Error("No active game or user not authenticated");
       
+      // Get all transactions for this game
+      const { data: gameTransactions, error: fetchError } = await supabase
+        .from("transactions")
+        .select("*, player:players(game_id)")
+        .eq("player.game_id", game.id);
+      
+      if (fetchError) throw fetchError;
+
       // Insert into closed_registers
-      const { error: insertError } = await supabase
+      const { data: closedRegister, error: insertError } = await supabase
         .from("closed_registers")
         .insert([{
           id: game.id,
           created_at: game.created_at,
           name: game.name,
-          created_by: user.id,  // Explicitly set the created_by to current user
+          created_by: user.id,
           last_transaction_at: game.last_transaction_at,
           closed_at: new Date().toISOString(),
-        }]);
+        }])
+        .select()
+        .single();
       
       if (insertError) throw insertError;
+
+      // Copy all transactions to closed_transactions
+      if (gameTransactions && gameTransactions.length > 0) {
+        const closedTransactions = gameTransactions.map(t => ({
+          closed_register_id: closedRegister.id,
+          player_id: t.player_id,
+          type: t.type,
+          chips: t.chips,
+          payment: t.payment,
+          method: t.method,
+          created_at: t.created_at,
+        }));
+
+        const { error: transactionError } = await supabase
+          .from("closed_transactions")
+          .insert(closedTransactions);
+
+        if (transactionError) throw transactionError;
+      }
 
       // Delete from open_registers
       const { error: deleteError } = await supabase
         .from("open_registers")
         .delete()
         .eq("id", game.id)
-        .eq("created_by", user.id);  // Add this condition for extra security
+        .eq("created_by", user.id);
       
       if (deleteError) throw deleteError;
     },
@@ -193,6 +222,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         description: "Erro ao encerrar o jogo",
         variant: "destructive",
       });
+      console.error("Error closing game:", error);
     }
   });
 
