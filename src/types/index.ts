@@ -10,14 +10,15 @@ export type Player = {
   pixPayments: number;
 };
 
+export type TransactionType = "buy-in" | "cash-out" | "refund";
+export type PaymentMethod = "cash" | "card" | "pix" | "voucher";
+
 export type Transaction = {
   id: string;
   player_id: string;
-  type: "buy-in" | "cash-out" | "refund";
+  type: TransactionType;
   chips: number;
   payment: number;
   method: PaymentMethod;
   created_at: string;
 };
-
-export type PaymentMethod = "cash" | "card" | "pix" | "voucher";

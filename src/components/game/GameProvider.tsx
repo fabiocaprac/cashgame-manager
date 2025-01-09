@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Player, Transaction } from "@/types";
+import { Player, Transaction, TransactionType, PaymentMethod } from "@/types";
 
 interface GameContextType {
   game: any;
@@ -39,7 +39,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const fetchGameData = async () => {
     try {
-      // Fetch game data
       const { data: gameData, error: gameError } = await supabase
         .from("open_cashier")
         .select("*")
@@ -49,7 +48,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       if (gameError) throw gameError;
       setGame(gameData);
 
-      // Fetch players with game_id filter
       const { data: playersData, error: playersError } = await supabase
         .from("players")
         .select("*")
@@ -57,7 +55,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
       if (playersError) throw playersError;
 
-      // Fetch transactions
       const { data: transactionsData, error: transactionsError } = await supabase
         .from("transactions")
         .select("*")
@@ -68,8 +65,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
       if (transactionsError) throw transactionsError;
 
+      const typedTransactions = transactionsData.map(t => ({
+        ...t,
+        type: t.type as TransactionType,
+        method: t.method as PaymentMethod
+      }));
+
       const enhancedPlayers = playersData.map((player) => {
-        const playerTransactions = transactionsData.filter(
+        const playerTransactions = typedTransactions.filter(
           (t) => t.player_id === player.id
         );
         const purchases = playerTransactions
@@ -99,7 +102,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       });
 
       setPlayers(enhancedPlayers);
-      setTransactions(transactionsData);
+      setTransactions(typedTransactions);
     } catch (error: any) {
       console.error("Error fetching game data:", error);
       toast({
@@ -156,7 +159,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
       if (!user) throw new Error("User not authenticated");
 
-      // Move game to closed_cashier
       const { error: closeError } = await supabase
         .from("closed_cashier")
         .insert([
@@ -168,7 +170,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
       if (closeError) throw closeError;
 
-      // Move transactions to closed_cashier_transactions
       const { error: transactionsError } = await supabase
         .from("closed_cashier_transactions")
         .insert(transactions.map((t) => ({
@@ -178,7 +179,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
       if (transactionsError) throw transactionsError;
 
-      // Delete original game and transactions
       await supabase.from("transactions").delete().in(
         "player_id",
         players.map((p) => p.id)
@@ -240,10 +240,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         .from("transactions")
         .insert([{
           player_id: values.player_id,
-          type: values.type as "buy-in" | "cash-out" | "refund",
+          type: values.type as TransactionType,
           chips: values.chips,
           payment: values.payment,
-          method: values.method,
+          method: values.method as PaymentMethod,
           created_at: new Date().toISOString(),
         }])
         .select()
