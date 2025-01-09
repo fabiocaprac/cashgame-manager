@@ -1,22 +1,23 @@
 export type Player = {
   id: string;
   name: string;
+  game_id: string;
+  created_at: string;
   purchases: number;
   returns: number;
   cashPayments: number;
   cardPayments: number;
   pixPayments: number;
-  finalBalance: number;
 };
 
 export type Transaction = {
   id: string;
-  playerId: string;
+  player_id: string;
   type: "buy-in" | "cash-out" | "refund";
   chips: number;
   payment: number;
   method: PaymentMethod;
-  timestamp: Date;
+  created_at: string;
 };
 
 export type PaymentMethod = "cash" | "card" | "pix" | "voucher";

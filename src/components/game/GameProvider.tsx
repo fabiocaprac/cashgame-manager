@@ -171,12 +171,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       // Move transactions to closed_cashier_transactions
       const { error: transactionsError } = await supabase
         .from("closed_cashier_transactions")
-        .insert(
-          transactions.map((t) => ({
-            ...t,
-            closed_register_id: game.id,
-          }))
-        );
+        .insert(transactions.map((t) => ({
+          ...t,
+          closed_register_id: game.id,
+        })));
 
       if (transactionsError) throw transactionsError;
 
@@ -216,7 +214,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error;
 
-      setPlayers([...players, { ...player, purchases: 0, returns: 0, cashPayments: 0, cardPayments: 0, pixPayments: 0 }]);
+      setPlayers([...players, { 
+        ...player, 
+        purchases: 0, 
+        returns: 0, 
+        cashPayments: 0, 
+        cardPayments: 0, 
+        pixPayments: 0 
+      }]);
     } catch (error: any) {
       console.error("Error adding player:", error);
       toast({
@@ -233,12 +238,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data: transaction, error } = await supabase
         .from("transactions")
-        .insert([
-          {
-            ...values,
-            created_at: new Date().toISOString(),
-          },
-        ])
+        .insert([{
+          player_id: values.player_id,
+          type: values.type,
+          chips: values.chips,
+          payment: values.payment,
+          method: values.method,
+          created_at: new Date().toISOString(),
+        }])
         .select()
         .single();
 
