@@ -12,7 +12,7 @@ export default function ClosedGames() {
     queryKey: ["closedGames"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("closed_registers")
+        .from("closed_cashier")
         .select("*")
         .order("closed_at", { ascending: false });
       

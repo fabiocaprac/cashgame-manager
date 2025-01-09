@@ -41,7 +41,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       closed_cashier_transactions: {
@@ -82,7 +82,14 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "closed_cashier"
             referencedColumns: ["id"]
-          }
+          },
+          {
+            foreignKeyName: "closed_transactions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
         ]
       }
       open_cashier: {
@@ -114,7 +121,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       players: {
@@ -138,10 +145,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "players_open_register_id_fkey"
+            foreignKeyName: "players_open_cashier_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
-            referencedRelation: "open_registers"
+            referencedRelation: "open_cashier"
             referencedColumns: ["id"]
           },
         ]
