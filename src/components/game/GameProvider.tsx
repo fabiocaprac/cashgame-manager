@@ -1,299 +1,260 @@
-import { createContext, useContext, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "../auth/AuthProvider";
 import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 import { Player, Transaction } from "@/types";
-import { Database } from "@/integrations/supabase/types";
-
-type Tables = Database['public']['Tables'];
-type Game = Tables['open_cashier']['Row'];
 
 interface GameContextType {
-  game: Game | null;
+  game: any;
   players: Player[];
   transactions: Transaction[];
-  createGame: (name?: string, notes?: string) => Promise<Game>;
+  isLoading: boolean;
+  isGameClosed: boolean;
+  createGame: (name: string, notes?: string) => Promise<void>;
   closeGame: () => Promise<void>;
   addPlayer: (name: string) => Promise<void>;
   addTransaction: (values: any) => Promise<void>;
-  isLoading: boolean;
-  isGameClosed: boolean;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [game, setGame] = useState<any>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isGameClosed, setIsGameClosed] = useState(false);
 
-  // Fetch current active game
-  const { data: game, isLoading: isGameLoading } = useQuery({
-    queryKey: ["currentGame"],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      
-      const { data, error } = await supabase
+  const gameId = window.location.pathname.split("/").pop();
+
+  useEffect(() => {
+    if (gameId) {
+      fetchGameData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [gameId]);
+
+  const fetchGameData = async () => {
+    try {
+      // Fetch game data
+      const { data: gameData, error: gameError } = await supabase
         .from("open_cashier")
         .select("*")
-        .eq("created_by", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id,
-  });
+        .eq("id", gameId)
+        .single();
 
-  const { data: rawPlayers = [], isLoading: isPlayersLoading } = useQuery({
-    queryKey: ["players", game?.id],
-    queryFn: async () => {
-      if (!game?.id) return [];
-      const { data, error } = await supabase
+      if (gameError) throw gameError;
+      setGame(gameData);
+
+      // Fetch players with game_id filter
+      const { data: playersData, error: playersError } = await supabase
         .from("players")
         .select("*")
-        .eq("game_id", game.id)
-        .order("created_at", { ascending: true });
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!game?.id,
-  });
+        .eq("game_id", gameId);
 
-  // Fetch transactions for current game
-  const { data: transactions = [], isLoading: isTransactionsLoading } = useQuery({
-    queryKey: ["transactions", game?.id],
-    queryFn: async () => {
-      if (!game?.id) return [];
-      const { data, error } = await supabase
+      if (playersError) throw playersError;
+
+      // Fetch transactions
+      const { data: transactionsData, error: transactionsError } = await supabase
         .from("transactions")
-        .select("*, player:players(game_id)")
-        .eq("player.game_id", game.id);
-      
-      if (error) throw error;
-      return data.map((transaction: Tables['transactions']['Row']) => ({
-        id: transaction.id,
-        playerId: transaction.player_id,
-        type: transaction.type as Transaction["type"],
-        chips: transaction.chips,
-        payment: transaction.payment,
-        method: transaction.method as Transaction["method"],
-        timestamp: new Date(transaction.created_at),
-      }));
-    },
-    enabled: !!game?.id,
-  });
+        .select("*")
+        .in(
+          "player_id",
+          playersData.map((p) => p.id)
+        );
 
-  // Calculate player balances from transactions
-  const players = rawPlayers.map((player) => {
-    const playerTransactions = transactions.filter(t => t.playerId === player.id);
-    
-    const purchases = playerTransactions
-      .filter(t => t.type === "buy-in")
-      .reduce((sum, t) => sum + t.chips, 0);
-    
-    const returns = playerTransactions
-      .filter(t => t.type === "cash-out")
-      .reduce((sum, t) => sum + t.chips, 0);
-    
-    const cashPayments = playerTransactions
-      .filter(t => t.method === "cash")
-      .reduce((sum, t) => sum + t.payment, 0);
-    
-    const cardPayments = playerTransactions
-      .filter(t => t.method === "card")
-      .reduce((sum, t) => sum + t.payment, 0);
-    
-    const pixPayments = playerTransactions
-      .filter(t => t.method === "pix")
-      .reduce((sum, t) => sum + t.payment, 0);
+      if (transactionsError) throw transactionsError;
 
-    return {
-      id: player.id,
-      name: player.name,
-      purchases,
-      returns,
-      cashPayments,
-      cardPayments,
-      pixPayments,
-      finalBalance: -purchases + returns + cashPayments + cardPayments + pixPayments,
-    };
-  });
+      const enhancedPlayers = playersData.map((player) => {
+        const playerTransactions = transactionsData.filter(
+          (t) => t.player_id === player.id
+        );
+        const purchases = playerTransactions
+          .filter((t) => t.type === "buy-in")
+          .reduce((sum, t) => sum + Number(t.chips), 0);
+        const returns = playerTransactions
+          .filter((t) => t.type === "cash-out" || t.type === "refund")
+          .reduce((sum, t) => sum + Number(t.chips), 0);
+        const cashPayments = playerTransactions
+          .filter((t) => t.method === "cash")
+          .reduce((sum, t) => sum + Number(t.payment), 0);
+        const cardPayments = playerTransactions
+          .filter((t) => t.method === "card")
+          .reduce((sum, t) => sum + Number(t.payment), 0);
+        const pixPayments = playerTransactions
+          .filter((t) => t.method === "pix")
+          .reduce((sum, t) => sum + Number(t.payment), 0);
 
-  // Create new game
-  const createGameMutation = useMutation({
-    mutationFn: async (values: { name?: string; notes?: string } = {}) => {
-      if (!user?.id) throw new Error("User not authenticated");
-      
-      const { data, error } = await supabase
+        return {
+          ...player,
+          purchases,
+          returns,
+          cashPayments,
+          cardPayments,
+          pixPayments,
+        };
+      });
+
+      setPlayers(enhancedPlayers);
+      setTransactions(transactionsData);
+    } catch (error: any) {
+      console.error("Error fetching game data:", error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao carregar dados do jogo",
+        variant: "destructive",
+      });
+      navigate("/");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const createGame = async (name: string, notes?: string) => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) throw new Error("User not authenticated");
+
+      const { data: game, error: gameError } = await supabase
         .from("open_cashier")
-        .insert([{ 
-          created_by: user.id,
-          name: values.name || null,
-        }])
+        .insert([
+          {
+            name,
+            notes,
+            created_by: user.id,
+          },
+        ])
         .select()
         .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["currentGame"] });
+
+      if (gameError) throw gameError;
+
+      navigate(`/game/${game.id}`);
+    } catch (error: any) {
+      console.error("Error creating game:", error);
       toast({
-        title: "Sucesso",
-        description: "Novo jogo criado com sucesso",
+        title: "Erro",
+        description: error.message || "Erro ao criar jogo",
+        variant: "destructive",
       });
-    },
-  });
+    }
+  };
 
-  // Close current game
-  const closeGameMutation = useMutation({
-    mutationFn: async () => {
-      if (!game?.id || !user?.id) throw new Error("No active game or user not authenticated");
-      
-      // Get all transactions for this game
-      const { data: gameTransactions, error: fetchError } = await supabase
-        .from("transactions")
-        .select("*, player:players(game_id)")
-        .eq("player.game_id", game.id);
-      
-      if (fetchError) throw fetchError;
+  const closeGame = async () => {
+    if (!game) return;
 
-      // Insert into closed_cashier
-      const { data: closedRegister, error: insertError } = await supabase
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) throw new Error("User not authenticated");
+
+      // Move game to closed_cashier
+      const { error: closeError } = await supabase
         .from("closed_cashier")
-        .insert([{
-          id: game.id,
-          created_at: game.created_at,
-          name: game.name,
-          created_by: user.id,
-          last_transaction_at: game.last_transaction_at,
-          closed_at: new Date().toISOString(),
-        }])
+        .insert([
+          {
+            ...game,
+            closed_at: new Date().toISOString(),
+          },
+        ]);
+
+      if (closeError) throw closeError;
+
+      // Move transactions to closed_cashier_transactions
+      const { error: transactionsError } = await supabase
+        .from("closed_cashier_transactions")
+        .insert(
+          transactions.map((t) => ({
+            ...t,
+            closed_register_id: game.id,
+          }))
+        );
+
+      if (transactionsError) throw transactionsError;
+
+      // Delete original game and transactions
+      await supabase.from("transactions").delete().in(
+        "player_id",
+        players.map((p) => p.id)
+      );
+      await supabase.from("players").delete().eq("game_id", game.id);
+      await supabase.from("open_cashier").delete().eq("id", game.id);
+
+      setIsGameClosed(true);
+    } catch (error: any) {
+      console.error("Error closing game:", error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao fechar jogo",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const addPlayer = async (name: string) => {
+    if (!game) return;
+
+    try {
+      const { data: player, error } = await supabase
+        .from("players")
+        .insert([
+          {
+            name,
+            game_id: game.id,
+          },
+        ])
         .select()
         .single();
-      
-      if (insertError) throw insertError;
 
-      // Copy all transactions to closed_cashier_transactions
-      if (gameTransactions && gameTransactions.length > 0) {
-        const closedTransactions = gameTransactions.map(t => ({
-          closed_register_id: closedRegister.id,
-          player_id: t.player_id,
-          type: t.type,
-          chips: t.chips,
-          payment: t.payment,
-          method: t.method,
-          created_at: t.created_at,
-        }));
-
-        const { error: transactionError } = await supabase
-          .from("closed_cashier_transactions")
-          .insert(closedTransactions);
-
-        if (transactionError) throw transactionError;
-      }
-
-      // Delete from open_cashier
-      const { error: deleteError } = await supabase
-        .from("open_cashier")
-        .delete()
-        .eq("id", game.id)
-        .eq("created_by", user.id);
-      
-      if (deleteError) throw deleteError;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["currentGame"] });
-      queryClient.invalidateQueries({ queryKey: ["players", game?.id] });
-      queryClient.invalidateQueries({ queryKey: ["transactions", game?.id] });
-      toast({
-        title: "Sucesso",
-        description: "Jogo encerrado com sucesso",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erro",
-        description: "Erro ao encerrar o jogo",
-        variant: "destructive",
-      });
-      console.error("Error closing game:", error);
-    }
-  });
-
-  // Add new player
-  const addPlayerMutation = useMutation({
-    mutationFn: async (name: string) => {
-      if (!game?.id) throw new Error("No game selected");
-      
-      const { error } = await supabase
-        .from("players")
-        .insert([{ game_id: game.id, name }]);
-      
       if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["players", game?.id] });
-      toast({
-        title: "Sucesso",
-        description: "Jogador adicionado com sucesso",
-      });
-    },
-    onError: (error) => {
+
+      setPlayers([...players, { ...player, purchases: 0, returns: 0, cashPayments: 0, cardPayments: 0, pixPayments: 0 }]);
+    } catch (error: any) {
+      console.error("Error adding player:", error);
       toast({
         title: "Erro",
-        description: error.message,
+        description: error.message || "Erro ao adicionar jogador",
         variant: "destructive",
       });
     }
-  });
+  };
 
-  // Add new transaction
-  const addTransactionMutation = useMutation({
-    mutationFn: async (values: {
-      playerId: string;
-      type: "buy-in" | "cash-out" | "refund";
-      chips: number;
-      payment: number;
-      method: "cash" | "card" | "pix" | "voucher";
-    }) => {
-      if (!game?.id) throw new Error("No game selected");
-      
-      const { error } = await supabase
+  const addTransaction = async (values: any) => {
+    if (!game) return;
+
+    try {
+      const { data: transaction, error } = await supabase
         .from("transactions")
-        .insert([{
-          player_id: values.playerId,
-          type: values.type,
-          chips: values.chips,
-          payment: values.payment,
-          method: values.method,
-        }]);
-      
+        .insert([
+          {
+            ...values,
+            created_at: new Date().toISOString(),
+          },
+        ])
+        .select()
+        .single();
+
       if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions", game?.id] });
-      toast({
-        title: "Sucesso",
-        description: "Transação registrada com sucesso",
-      });
-    },
-    onError: (error) => {
+
+      setTransactions([...transactions, transaction]);
+      await fetchGameData(); // Refresh all data to ensure consistency
+    } catch (error: any) {
+      console.error("Error adding transaction:", error);
       toast({
         title: "Erro",
-        description: error.message,
+        description: error.message || "Erro ao adicionar transação",
         variant: "destructive",
       });
     }
-  });
-
-  // Add isGameClosed computed property
-  const isGameClosed = false; // Since we're now using open_cashier/closed_cashier tables
+  };
 
   return (
     <GameContext.Provider
@@ -301,13 +262,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         game,
         players,
         transactions,
-        isLoading: isGameLoading || isPlayersLoading || isTransactionsLoading,
-        createGame: (name?: string, notes?: string) => 
-          createGameMutation.mutateAsync({ name, notes }),
-        closeGame: () => closeGameMutation.mutateAsync(),
-        addPlayer: (name) => addPlayerMutation.mutateAsync(name),
-        addTransaction: (values) => addTransactionMutation.mutateAsync(values),
-        isGameClosed: false,
+        isLoading,
+        isGameClosed,
+        createGame,
+        closeGame,
+        addPlayer,
+        addTransaction,
       }}
     >
       {children}
@@ -315,7 +275,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export const useGame = () => {
+export function useGame() {
   const context = useContext(GameContext);
   if (context === undefined) {
     throw new Error("useGame must be used within a GameProvider");
