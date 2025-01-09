@@ -13,7 +13,7 @@ interface GameContextType {
   game: Game | null;
   players: Player[];
   transactions: Transaction[];
-  createGame: () => Promise<void>;
+  createGame: () => Promise<Game>;
   addPlayer: (name: string) => Promise<void>;
   addTransaction: (values: any) => Promise<void>;
 }
