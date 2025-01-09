@@ -153,7 +153,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   // Close current game
   const closeGameMutation = useMutation({
     mutationFn: async () => {
-      if (!game?.id) throw new Error("No active game");
+      if (!game?.id || !user?.id) throw new Error("No active game or user not authenticated");
       
       // Insert into closed_registers
       const { error: insertError } = await supabase
@@ -162,7 +162,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           id: game.id,
           created_at: game.created_at,
           name: game.name,
-          created_by: game.created_by,
+          created_by: user.id,  // Explicitly set the created_by to current user
           last_transaction_at: game.last_transaction_at,
           closed_at: new Date().toISOString(),
         }]);
@@ -173,7 +173,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       const { error: deleteError } = await supabase
         .from("open_registers")
         .delete()
-        .eq("id", game.id);
+        .eq("id", game.id)
+        .eq("created_by", user.id);  // Add this condition for extra security
       
       if (deleteError) throw deleteError;
     },
@@ -276,7 +277,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         closeGame: () => closeGameMutation.mutateAsync(),
         addPlayer: (name) => addPlayerMutation.mutateAsync(name),
         addTransaction: (values) => addTransactionMutation.mutateAsync(values),
-        isGameClosed,
+        isGameClosed: false,
       }}
     >
       {children}
