@@ -44,6 +44,54 @@ export type Database = {
           },
         ]
       }
+      closed_transactions: {
+        Row: {
+          chips: number
+          closed_register_id: string
+          created_at: string
+          id: string
+          method: string
+          payment: number
+          player_id: string
+          type: string
+        }
+        Insert: {
+          chips: number
+          closed_register_id: string
+          created_at?: string
+          id?: string
+          method: string
+          payment: number
+          player_id: string
+          type: string
+        }
+        Update: {
+          chips?: number
+          closed_register_id?: string
+          created_at?: string
+          id?: string
+          method?: string
+          payment?: number
+          player_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closed_transactions_closed_register_id_fkey"
+            columns: ["closed_register_id"]
+            isOneToOne: false
+            referencedRelation: "closed_registers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "closed_transactions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       open_registers: {
         Row: {
           created_at: string
