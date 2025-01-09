@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "../auth/AuthProvider";
@@ -14,8 +14,10 @@ interface GameContextType {
   players: Player[];
   transactions: Transaction[];
   createGame: (name?: string, notes?: string) => Promise<Game>;
+  closeGame: () => Promise<void>;
   addPlayer: (name: string) => Promise<void>;
   addTransaction: (values: any) => Promise<void>;
+  isLoading: boolean;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -24,50 +26,53 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [currentGameId, setCurrentGameId] = useState<string | null>(null);
 
-  // Fetch current game
-  const { data: game } = useQuery({
-    queryKey: ["game", currentGameId],
+  // Fetch current active game
+  const { data: game, isLoading: isGameLoading } = useQuery({
+    queryKey: ["currentGame"],
     queryFn: async () => {
-      if (!currentGameId) return null;
+      if (!user?.id) return null;
+      
       const { data, error } = await supabase
         .from("games")
         .select("*")
-        .eq("id", currentGameId)
+        .is("closed_at", null)
+        .eq("created_by", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
         .single();
       
-      if (error) throw error;
-      return data;
+      if (error && error.code !== 'PGRST116') throw error;
+      return data || null;
     },
-    enabled: !!currentGameId,
+    enabled: !!user?.id,
   });
 
   // Fetch players for current game
-  const { data: rawPlayers = [] } = useQuery({
-    queryKey: ["players", currentGameId],
+  const { data: rawPlayers = [], isLoading: isPlayersLoading } = useQuery({
+    queryKey: ["players", game?.id],
     queryFn: async () => {
-      if (!currentGameId) return [];
+      if (!game?.id) return [];
       const { data, error } = await supabase
         .from("players")
         .select("*")
-        .eq("game_id", currentGameId);
+        .eq("game_id", game.id);
       
       if (error) throw error;
       return data;
     },
-    enabled: !!currentGameId,
+    enabled: !!game?.id,
   });
 
   // Fetch transactions for current game
-  const { data: transactions = [] } = useQuery({
-    queryKey: ["transactions", currentGameId],
+  const { data: transactions = [], isLoading: isTransactionsLoading } = useQuery({
+    queryKey: ["transactions", game?.id],
     queryFn: async () => {
-      if (!currentGameId) return [];
+      if (!game?.id) return [];
       const { data, error } = await supabase
         .from("transactions")
         .select("*, player:players(game_id)")
-        .eq("player.game_id", currentGameId);
+        .eq("player.game_id", game.id);
       
       if (error) throw error;
       return data.map((transaction: Tables['transactions']['Row']) => ({
@@ -80,7 +85,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         timestamp: new Date(transaction.created_at),
       }));
     },
-    enabled: !!currentGameId,
+    enabled: !!game?.id,
   });
 
   // Calculate player balances from transactions
@@ -137,9 +142,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
-      setCurrentGameId(data.id);
-      queryClient.invalidateQueries({ queryKey: ["game"] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["currentGame"] });
       toast({
         title: "Sucesso",
         description: "Novo jogo criado com sucesso",
@@ -147,14 +151,35 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     },
   });
 
+  // Close current game
+  const closeGameMutation = useMutation({
+    mutationFn: async () => {
+      if (!game?.id) throw new Error("No active game");
+      
+      const { error } = await supabase
+        .from("games")
+        .update({ closed_at: new Date().toISOString() })
+        .eq("id", game.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["currentGame"] });
+      toast({
+        title: "Sucesso",
+        description: "Jogo encerrado com sucesso",
+      });
+    },
+  });
+
   // Add new player
   const addPlayerMutation = useMutation({
     mutationFn: async (name: string) => {
-      if (!currentGameId) throw new Error("No game selected");
+      if (!game?.id) throw new Error("No game selected");
       
       const { error } = await supabase
         .from("players")
-        .insert([{ game_id: currentGameId, name }])
+        .insert([{ game_id: game.id, name }])
         .select()
         .single();
       
@@ -207,8 +232,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         game,
         players,
         transactions,
+        isLoading: isGameLoading || isPlayersLoading || isTransactionsLoading,
         createGame: (name?: string, notes?: string) => 
           createGameMutation.mutateAsync({ name, notes }),
+        closeGame: () => closeGameMutation.mutateAsync(),
         addPlayer: (name) => addPlayerMutation.mutateAsync(name),
         addTransaction: (values) => addTransactionMutation.mutateAsync(values),
       }}

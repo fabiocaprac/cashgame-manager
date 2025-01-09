@@ -6,7 +6,7 @@ import { PlayerTable } from "@/components/PlayerTable";
 import { TransactionDialog } from "@/components/TransactionDialog";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import { PaymentMethod } from "@/types";
-import { PlusCircle, LogOut, History } from "lucide-react";
+import { PlusCircle, LogOut, History, XCircle } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useGame } from "@/components/game/GameProvider";
@@ -16,7 +16,17 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const { signOut } = useAuth();
-  const { game, players, transactions, createGame, addPlayer, addTransaction } = useGame();
+  const { 
+    game, 
+    players, 
+    transactions, 
+    createGame, 
+    closeGame,
+    addPlayer, 
+    addTransaction,
+    isLoading 
+  } = useGame();
+  
   const [newPlayerName, setNewPlayerName] = useState("");
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
@@ -57,6 +67,11 @@ const Index = () => {
     setNewGameNotes("");
   };
 
+  const handleCloseGame = async () => {
+    await closeGame();
+    setShowClosedGames(true);
+  };
+
   const selectedPlayer = players.find((p) => p.id === selectedPlayerId);
   const playerTransactions = transactions.filter(
     (t) => t.playerId === selectedPlayerId
@@ -83,6 +98,16 @@ const Index = () => {
         balance: received,
       };
     });
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div className="text-lg text-muted-foreground">Carregando...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-8 space-y-8">
@@ -146,6 +171,13 @@ const Index = () => {
               onClick={() => setTransactionDialogOpen(true)}
             >
               Nova Transação
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleCloseGame}
+            >
+              <XCircle className="h-4 w-4 mr-2" />
+              Encerrar Caixa
             </Button>
           </div>
 
