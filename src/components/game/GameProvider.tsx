@@ -56,7 +56,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase
         .from("players")
         .select("*")
-        .eq("game_id", game.id);
+        .eq("game_id", game.id)
+        .order("created_at", { ascending: true });
       
       if (error) throw error;
       return data;
@@ -179,14 +180,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       
       const { error } = await supabase
         .from("players")
-        .insert([{ game_id: game.id, name }])
-        .select()
-        .single();
+        .insert([{ game_id: game.id, name }]);
       
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["players"] });
+      queryClient.invalidateQueries({ queryKey: ["players", game?.id] });
       toast({
         title: "Sucesso",
         description: "Jogador adicionado com sucesso",
@@ -218,7 +217,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions", game?.id] });
       toast({
         title: "Sucesso",
         description: "Transação registrada com sucesso",
