@@ -105,12 +105,17 @@ export default function Dashboard() {
                   <Button
                     key={game.id}
                     variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => navigate(`/games/${game.id}`)}
+                    className="w-full justify-start text-left"
+                    onClick={() => navigate(`/closed-games/${game.id}`)}
                   >
-                    <span className="truncate">
-                      {game.name || format(new Date(game.created_at), "dd/MM/yyyy")}
-                    </span>
+                    <div className="flex flex-col items-start w-full">
+                      <span className="truncate font-medium">
+                        {game.name || format(new Date(game.created_at), "dd/MM/yyyy")}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        Fechado em: {format(new Date(game.closed_at), "dd/MM/yyyy HH:mm")}
+                      </span>
+                    </div>
                   </Button>
                 ))
               )}
