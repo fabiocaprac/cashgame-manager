@@ -6,6 +6,9 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./components/auth/AuthProvider";
 import { GameProvider } from "./components/game/GameProvider";
 import { LoginPage } from "./components/auth/LoginPage";
+import Dashboard from "./pages/Dashboard";
+import NewGame from "./pages/NewGame";
+import ClosedGames from "./pages/ClosedGames";
 import Index from "./pages/Index";
 import { useAuth } from "./components/auth/AuthProvider";
 
@@ -27,6 +30,32 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route
         path="/"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/new-game"
+        element={
+          <ProtectedRoute>
+            <GameProvider>
+              <NewGame />
+            </GameProvider>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/closed-games"
+        element={
+          <ProtectedRoute>
+            <ClosedGames />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/games/:id"
         element={
           <ProtectedRoute>
             <GameProvider>
