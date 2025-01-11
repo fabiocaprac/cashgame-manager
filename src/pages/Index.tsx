@@ -1,139 +1,116 @@
+import { useState } from "react";
+import { useGame } from "@/components/game/GameProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { CashGameSummary } from "@/components/CashGameSummary";
 import { PlayerTable } from "@/components/PlayerTable";
 import { TransactionDialog } from "@/components/TransactionDialog";
 import { TransactionHistory } from "@/components/TransactionHistory";
+import { CashGameSummary } from "@/components/CashGameSummary";
 import { CloseGameDialog } from "@/components/CloseGameDialog";
-import { EditAuthDialog } from "@/components/EditAuthDialog";
-import { PaymentMethod } from "@/types";
-import { PlusCircle, LogOut, History, XCircle, ArrowLeft, Search, UserPlus } from "lucide-react";
-import { useState } from "react";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { useGame } from "@/components/game/GameProvider";
-import { ClosedGamesTable } from "@/components/ClosedGamesTable";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { useNavigate } from "react-router-dom";
+import { UserPlus, Search, Plus } from "lucide-react";
 import {
   Command,
+  CommandDialog,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
-} from "@/components/ui/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+  CommandList,
+} from "@/components/ui/command";
+import { supabase } from "@/integrations/supabase/client";
 
-const Index = () => {
-  const navigate = useNavigate();
-  const { signOut } = useAuth();
-  const { toast } = useToast();
-  const { 
-    game, 
-    players, 
-    transactions, 
-    createGame, 
-    closeGame,
-    addPlayer, 
-    addTransaction,
-    isLoading,
-    isGameClosed,
-    refreshData
-  } = useGame();
-  
-  const [newPlayerName, setNewPlayerName] = useState("");
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
-  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
-  const [closeGameDialogOpen, setCloseGameDialogOpen] = useState(false);
-  const [editAuthDialogOpen, setEditAuthDialogOpen] = useState(false);
-  const [isEditAuthorized, setIsEditAuthorized] = useState(false);
+export default function Index() {
+  const { game, players, addPlayer, refreshData } = useGame();
+  const [isTransactionDialogOpen, setIsTransactionDialogOpen] = useState(false);
+  const [isCloseGameDialogOpen, setIsCloseGameDialogOpen] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
-  const [newGameName, setNewGameName] = useState("");
-  const [newGameNotes, setNewGameNotes] = useState("");
+  const [newPlayerName, setNewPlayerName] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const { toast } = useToast();
 
-  const handleSearch = async (search: string) => {
-    setNewPlayerName(search);
-    
-    if (search.length < 2) {
+  const handleViewHistory = (playerId: string) => {
+    setSelectedPlayerId(playerId);
+  };
+
+  const handleCloseHistory = () => {
+    setSelectedPlayerId(null);
+  };
+
+  const handleSearch = async (value: string) => {
+    if (!value) {
       setSearchResults([]);
       return;
     }
 
     try {
       const { data, error } = await supabase
-        .from('players')
-        .select('name, id')
-        .ilike('name', `%${search}%`)
-        .limit(5);
+        .from("players")
+        .select("*")
+        .ilike("name", `%${value}%`)
+        .is("game_id", null);
 
       if (error) throw error;
-      
       setSearchResults(data || []);
     } catch (error: any) {
-      console.error('Error searching players:', error);
+      console.error("Error searching players:", error);
       toast({
         title: "Erro",
-        description: "Erro ao buscar jogadores",
+        description: error.message || "Erro ao buscar jogadores",
         variant: "destructive",
       });
     }
   };
 
-  const handleSelectPlayer = (name: string) => {
-    setNewPlayerName(name);
-    setSearchOpen(false);
-  };
-
-  const handleAddPlayer = () => {
-    if (!newPlayerName.trim()) return;
-    if (isGameClosed) {
+  const handleSelectPlayer = async (player: any) => {
+    try {
+      await addPlayer(player.name);
+      setIsSearchOpen(false);
+      toast({
+        title: "Sucesso",
+        description: "Jogador adicionado ao jogo",
+      });
+    } catch (error: any) {
+      console.error("Error adding player:", error);
       toast({
         title: "Erro",
-        description: "Não é possível adicionar jogadores em um caixa fechado",
+        description: error.message || "Erro ao adicionar jogador",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreatePlayerRecord = async () => {
+    if (!newPlayerName.trim()) {
+      toast({
+        title: "Erro",
+        description: "Nome do jogador é obrigatório",
         variant: "destructive",
       });
       return;
     }
-    addPlayer(newPlayerName);
-    setNewPlayerName("");
-    setSearchResults([]);
-  };
 
-  const handleCreatePlayerRecord = async () => {
-    if (!newPlayerName.trim()) return;
-    
     try {
-      const { data, error } = await supabase
-        .from('players')
+      const { error } = await supabase
+        .from("players")
         .insert([
           { 
             name: newPlayerName,
-            // Usando um ID de jogo nulo para indicar que é apenas um registro de jogador
-            game_id: '00000000-0000-0000-0000-000000000000'
+            game_id: null // Criando jogador sem associação com jogo
           }
-        ])
-        .select()
-        .single();
+        ]);
 
       if (error) throw error;
-      
+
       toast({
         title: "Sucesso",
         description: "Jogador registrado com sucesso no banco de dados",
       });
       
       setNewPlayerName("");
-      setSearchResults([]);
     } catch (error: any) {
-      console.error('Error creating player:', error);
+      console.error("Error creating player record:", error);
       toast({
         title: "Erro",
         description: error.message || "Erro ao registrar jogador",
@@ -142,214 +119,103 @@ const Index = () => {
     }
   };
 
-  const handleViewHistory = (playerId: string) => {
-    setSelectedPlayerId(playerId);
-    setHistoryDialogOpen(true);
-  };
-
-  const handleCreateGame = async () => {
-    await createGame(newGameName, newGameNotes);
-    setNewGameName("");
-    setNewGameNotes("");
-  };
-
-  const handleCloseGame = async () => {
-    await closeGame();
-    navigate("/");
-    toast({
-      title: "Sucesso",
-      description: "Caixa encerrado com sucesso",
-    });
-  };
-
-  const handleNewTransaction = () => {
-    if (isGameClosed && !isEditAuthorized) {
-      setEditAuthDialogOpen(true);
-      return;
-    }
-    setTransactionDialogOpen(true);
-  };
-
-  const selectedPlayer = players.find((p) => p.id === selectedPlayerId);
-  const playerTransactions = transactions.filter(
-    (t) => t.player_id === selectedPlayerId
-  );
-
-  const totalPurchases = players.reduce((sum, p) => sum + p.purchases, 0);
-  const totalReturns = players.reduce((sum, p) => sum + p.returns, 0);
-  const totalCashPayments = players.reduce((sum, p) => sum + p.cashPayments, 0);
-  const totalCardPayments = players.reduce((sum, p) => sum + p.cardPayments, 0);
-  const totalPixPayments = players.reduce((sum, p) => sum + p.pixPayments, 0);
-  const totalFinalBalance = -totalPurchases + totalReturns + totalCashPayments + totalCardPayments + totalPixPayments;
-
-  const movements: { method: PaymentMethod; received: number; paid: number; balance: number; }[] = 
-    (["cash", "card", "pix", "voucher"] as PaymentMethod[]).map((method) => {
-      const methodTransactions = transactions.filter((t) => t.method === method);
-      const received = methodTransactions.reduce(
-        (sum, t) => sum + t.payment,
-        0
-      );
-      return {
-        method,
-        received,
-        paid: 0,
-        balance: received,
-      };
-    });
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto py-8">
-        <div className="flex justify-center items-center min-h-[400px]">
-          <div className="text-lg text-muted-foreground">Carregando...</div>
-        </div>
-      </div>
-    );
-  }
+  if (!game) return null;
 
   return (
-    <div className="container mx-auto py-8 space-y-8">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={() => navigate("/")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar para Dashboard
+    <div className="container py-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">{game.name}</h1>
+        <div className="space-x-2">
+          <Button onClick={() => setIsTransactionDialogOpen(true)}>
+            Nova Transação
           </Button>
-          <h1 className="text-4xl font-bold">Cash Game</h1>
-        </div>
-        <div className="flex gap-4">
-          <Button variant="outline" onClick={signOut}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Sair
+          <Button
+            variant="destructive"
+            onClick={() => setIsCloseGameDialogOpen(true)}
+          >
+            Fechar Caixa
           </Button>
         </div>
       </div>
 
-      {!game ? (
-        <div className="flex flex-col items-center justify-center py-12 space-y-4">
-          <h2 className="text-2xl font-semibold mb-4">Nenhum jogo em andamento</h2>
-          <div className="w-full max-w-md space-y-4">
-            <Input
-              placeholder="Nome do jogo"
-              value={newGameName}
-              onChange={(e) => setNewGameName(e.target.value)}
-            />
-            <Textarea
-              placeholder="Observações"
-              value={newGameNotes}
-              onChange={(e) => setNewGameNotes(e.target.value)}
-            />
-            <Button onClick={handleCreateGame} className="w-full">
-              Iniciar Novo Jogo
-            </Button>
-          </div>
+      <CashGameSummary players={players} />
+
+      <div className="flex gap-2">
+        <div className="flex-1 flex gap-2">
+          <Input
+            placeholder="Nome do jogador"
+            value={newPlayerName}
+            onChange={(e) => setNewPlayerName(e.target.value)}
+          />
+          <Button onClick={handleCreatePlayerRecord}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Novo Registro
+          </Button>
         </div>
-      ) : (
-        <>
-          <div className="flex gap-4 items-center">
-            <Popover open={searchOpen} onOpenChange={setSearchOpen}>
-              <PopoverTrigger asChild>
-                <div className="flex-1 max-w-xs">
-                  <Input
-                    placeholder="Nome do novo jogador"
-                    value={newPlayerName}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    className="w-full"
-                    disabled={isGameClosed}
-                  />
-                </div>
-              </PopoverTrigger>
-              {searchResults.length > 0 && (
-                <PopoverContent className="w-[200px] p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Buscar jogador..." />
-                    <CommandEmpty>Nenhum jogador encontrado.</CommandEmpty>
-                    <CommandGroup>
-                      {searchResults.map((player) => (
-                        <CommandItem
-                          key={player.id}
-                          onSelect={() => handleSelectPlayer(player.name)}
-                        >
-                          {player.name}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              )}
-            </Popover>
-            <Button 
-              onClick={handleAddPlayer} 
-              size="icon"
-              disabled={isGameClosed}
-            >
-              <PlusCircle className="h-4 w-4" />
-            </Button>
-            <Button
-              onClick={handleCreatePlayerRecord}
-              size="icon"
-              variant="outline"
-              disabled={!newPlayerName.trim()}
-              title="Registrar novo jogador no banco de dados"
-            >
-              <UserPlus className="h-4 w-4" />
-            </Button>
-            {!isGameClosed && (
-              <Button
-                variant="destructive"
-                onClick={() => setCloseGameDialogOpen(true)}
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                Encerrar Caixa
-              </Button>
-            )}
-          </div>
+        <Button onClick={() => setIsSearchOpen(true)}>
+          <Search className="h-4 w-4 mr-2" />
+          Buscar Jogador
+        </Button>
+      </div>
 
-          <div className="glass-card p-6">
-            <PlayerTable players={players} onViewHistory={handleViewHistory} />
-          </div>
+      <PlayerTable players={players} onViewHistory={handleViewHistory} />
 
-          <CashGameSummary
-            chipsInPlay={totalPurchases - totalReturns}
-            pendingDebits={totalPurchases}
-            pendingCredits={totalReturns}
-            finalBalance={totalFinalBalance}
-            movements={movements}
-          />
+      <TransactionDialog
+        open={isTransactionDialogOpen}
+        onOpenChange={setIsTransactionDialogOpen}
+        players={players}
+        onSubmit={async (values) => {
+          try {
+            await supabase.from("transactions").insert([
+              {
+                player_id: values.player_id,
+                type: values.type,
+                chips: values.chips,
+                payment: values.payment,
+                method: values.method,
+              },
+            ]);
+            await refreshData();
+          } catch (error: any) {
+            console.error("Error adding transaction:", error);
+            throw error;
+          }
+        }}
+      />
 
-          <TransactionDialog
-            open={transactionDialogOpen}
-            onOpenChange={setTransactionDialogOpen}
-            players={players}
-            onSubmit={addTransaction}
-            isGameClosed={isGameClosed}
-          />
+      <CloseGameDialog
+        open={isCloseGameDialogOpen}
+        onOpenChange={setIsCloseGameDialogOpen}
+      />
 
-          <CloseGameDialog
-            open={closeGameDialogOpen}
-            onOpenChange={setCloseGameDialogOpen}
-            onConfirm={handleCloseGame}
-          />
-
-          <EditAuthDialog
-            open={editAuthDialogOpen}
-            onOpenChange={setEditAuthDialogOpen}
-            onConfirm={() => setIsEditAuthorized(true)}
-          />
-
-          {selectedPlayer && (
-            <TransactionHistory
-              open={historyDialogOpen}
-              onOpenChange={setHistoryDialogOpen}
-              transactions={playerTransactions}
-              playerName={selectedPlayer.name}
-              onTransactionDeleted={refreshData}
-            />
-          )}
-        </>
+      {selectedPlayerId && (
+        <TransactionHistory
+          playerId={selectedPlayerId}
+          onClose={handleCloseHistory}
+        />
       )}
+
+      <CommandDialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
+        <Command>
+          <CommandInput
+            placeholder="Buscar jogador..."
+            onValueChange={handleSearch}
+          />
+          <CommandList>
+            <CommandEmpty>Nenhum jogador encontrado.</CommandEmpty>
+            <CommandGroup>
+              {searchResults.map((player) => (
+                <CommandItem
+                  key={player.id}
+                  onSelect={() => handleSelectPlayer(player)}
+                >
+                  {player.name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </CommandDialog>
     </div>
   );
-};
-
-export default Index;
+}

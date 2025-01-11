@@ -127,19 +127,19 @@ export type Database = {
       players: {
         Row: {
           created_at: string
-          game_id: string
+          game_id: string | null
           id: string
           name: string
         }
         Insert: {
           created_at?: string
-          game_id: string
+          game_id?: string | null
           id?: string
           name: string
         }
         Update: {
           created_at?: string
-          game_id?: string
+          game_id?: string | null
           id?: string
           name?: string
         }
