@@ -8,7 +8,7 @@ import { TransactionHistory } from "@/components/TransactionHistory";
 import { CloseGameDialog } from "@/components/CloseGameDialog";
 import { EditAuthDialog } from "@/components/EditAuthDialog";
 import { PaymentMethod } from "@/types";
-import { PlusCircle, LogOut, History, XCircle, ArrowLeft } from "lucide-react";
+import { PlusCircle, LogOut, History, XCircle, ArrowLeft, Search } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useGame } from "@/components/game/GameProvider";
@@ -17,6 +17,18 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 const Index = () => {
   const navigate = useNavigate();
@@ -36,6 +48,8 @@ const Index = () => {
   } = useGame();
   
   const [newPlayerName, setNewPlayerName] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [closeGameDialogOpen, setCloseGameDialogOpen] = useState(false);
@@ -44,6 +58,39 @@ const Index = () => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [newGameName, setNewGameName] = useState("");
   const [newGameNotes, setNewGameNotes] = useState("");
+
+  const handleSearch = async (search: string) => {
+    setNewPlayerName(search);
+    
+    if (search.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('players')
+        .select('name, id')
+        .ilike('name', `%${search}%`)
+        .limit(5);
+
+      if (error) throw error;
+      
+      setSearchResults(data || []);
+    } catch (error: any) {
+      console.error('Error searching players:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao buscar jogadores",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSelectPlayer = (name: string) => {
+    setNewPlayerName(name);
+    setSearchOpen(false);
+  };
 
   const handleAddPlayer = () => {
     if (!newPlayerName.trim()) return;
@@ -57,6 +104,7 @@ const Index = () => {
     }
     addPlayer(newPlayerName);
     setNewPlayerName("");
+    setSearchResults([]);
   };
 
   const handleViewHistory = (playerId: string) => {
@@ -164,13 +212,37 @@ const Index = () => {
       ) : (
         <>
           <div className="flex gap-4 items-center">
-            <Input
-              placeholder="Nome do novo jogador"
-              value={newPlayerName}
-              onChange={(e) => setNewPlayerName(e.target.value)}
-              className="max-w-xs"
-              disabled={isGameClosed}
-            />
+            <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+              <PopoverTrigger asChild>
+                <div className="flex-1 max-w-xs">
+                  <Input
+                    placeholder="Nome do novo jogador"
+                    value={newPlayerName}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="w-full"
+                    disabled={isGameClosed}
+                  />
+                </div>
+              </PopoverTrigger>
+              {searchResults.length > 0 && (
+                <PopoverContent className="w-[200px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Buscar jogador..." />
+                    <CommandEmpty>Nenhum jogador encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      {searchResults.map((player) => (
+                        <CommandItem
+                          key={player.id}
+                          onSelect={() => handleSelectPlayer(player.name)}
+                        >
+                          {player.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              )}
+            </Popover>
             <Button 
               onClick={handleAddPlayer} 
               size="icon"
