@@ -8,7 +8,7 @@ import { TransactionHistory } from "@/components/TransactionHistory";
 import { CloseGameDialog } from "@/components/CloseGameDialog";
 import { EditAuthDialog } from "@/components/EditAuthDialog";
 import { PaymentMethod } from "@/types";
-import { PlusCircle, LogOut, History, XCircle, ArrowLeft, Search } from "lucide-react";
+import { PlusCircle, LogOut, History, XCircle, ArrowLeft, Search, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useGame } from "@/components/game/GameProvider";
@@ -105,6 +105,40 @@ const Index = () => {
     addPlayer(newPlayerName);
     setNewPlayerName("");
     setSearchResults([]);
+  };
+
+  const handleCreatePlayerRecord = async () => {
+    if (!newPlayerName.trim()) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('players')
+        .insert([
+          { 
+            name: newPlayerName,
+            game_id: game?.id || '00000000-0000-0000-0000-000000000000' // ID temporário
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      toast({
+        title: "Sucesso",
+        description: "Jogador registrado com sucesso",
+      });
+      
+      setNewPlayerName("");
+      setSearchResults([]);
+    } catch (error: any) {
+      console.error('Error creating player:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao registrar jogador",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleViewHistory = (playerId: string) => {
@@ -251,16 +285,13 @@ const Index = () => {
               <PlusCircle className="h-4 w-4" />
             </Button>
             <Button
-              variant="secondary"
-              className={`ml-auto ${isGameClosed && !isEditAuthorized ? "opacity-50 cursor-not-allowed" : ""}`}
-              onClick={handleNewTransaction}
+              onClick={handleCreatePlayerRecord}
+              size="icon"
+              variant="outline"
+              disabled={!newPlayerName.trim()}
+              title="Registrar novo jogador no banco de dados"
             >
-              Nova Transação
-              {isGameClosed && !isEditAuthorized && (
-                <span className="ml-2 text-xs text-muted-foreground">
-                  (Requer Autorização)
-                </span>
-              )}
+              <UserPlus className="h-4 w-4" />
             </Button>
             {!isGameClosed && (
               <Button
