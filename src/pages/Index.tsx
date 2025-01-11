@@ -6,6 +6,7 @@ import { PlayerTable } from "@/components/PlayerTable";
 import { TransactionDialog } from "@/components/TransactionDialog";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import { CashGameSummary } from "@/components/CashGameSummary";
+import { CollapsibleFooterPanel } from "@/components/CollapsibleFooterPanel";
 import { CloseGameDialog } from "@/components/CloseGameDialog";
 import { useToast } from "@/components/ui/use-toast";
 import { UserPlus, Search, Plus } from "lucide-react";
@@ -192,7 +193,7 @@ export default function Index() {
   const summaryData = calculateSummaryData();
 
   return (
-    <div className="container py-6 space-y-6">
+    <div className="container py-6 space-y-6 pb-32">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{game.name}</h1>
         <div className="space-x-2">
@@ -263,7 +264,7 @@ export default function Index() {
         <TransactionHistory
           open={!!selectedPlayerId}
           onOpenChange={() => setSelectedPlayerId(null)}
-          transactions={[]} // This will be populated by the component itself
+          transactions={[]}
           playerName={selectedPlayerName}
           onTransactionDeleted={refreshData}
         />
@@ -290,6 +291,8 @@ export default function Index() {
           </CommandList>
         </Command>
       </CommandDialog>
+
+      <CollapsibleFooterPanel {...summaryData} />
     </div>
   );
 }
