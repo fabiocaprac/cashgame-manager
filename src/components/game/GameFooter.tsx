@@ -30,7 +30,7 @@ export function GameFooter({
   return (
     <div className={cn(
       "fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t transition-all duration-300",
-      isExpanded ? "h-[300px]" : "h-16"
+      isExpanded ? "pb-6" : "h-16"
     )}>
       <div className="container mx-auto p-4">
         <div className="flex items-center justify-end mb-4">
@@ -80,7 +80,7 @@ export function GameFooter({
             </div>
           </div>
         ) : (
-          <div className="overflow-y-auto max-h-[220px]">
+          <div>
             <CashGameSummary
               chipsInPlay={chipsInPlay}
               pendingDebits={pendingDebits}
