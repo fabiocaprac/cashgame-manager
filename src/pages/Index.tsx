@@ -5,13 +5,13 @@ import { Input } from "@/components/ui/input";
 import { PlayerTable } from "@/components/PlayerTable";
 import { TransactionDialog } from "@/components/TransactionDialog";
 import { TransactionHistory } from "@/components/TransactionHistory";
-import { CashGameSummary } from "@/components/CashGameSummary";
+import { GameFooter } from "@/components/game/GameFooter";
 import { CloseGameDialog } from "@/components/CloseGameDialog";
 import { useToast } from "@/components/ui/use-toast";
-import { UserPlus, Search, Plus } from "lucide-react";
+import { UserPlus, Search } from "lucide-react";
 import {
-  Command,
   CommandDialog,
+  Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
@@ -192,104 +192,106 @@ export default function Index() {
   const summaryData = calculateSummaryData();
 
   return (
-    <div className="container py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{game.name}</h1>
-        <div className="space-x-2">
-          <Button onClick={() => setIsTransactionDialogOpen(true)}>
-            Nova Transação
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={() => setIsCloseGameDialogOpen(true)}
-          >
-            Fechar Caixa
+    <>
+      <div className="container py-6 space-y-6 pb-[320px]">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">{game.name}</h1>
+          <div className="space-x-2">
+            <Button onClick={() => setIsTransactionDialogOpen(true)}>
+              Nova Transação
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => setIsCloseGameDialogOpen(true)}
+            >
+              Fechar Caixa
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <div className="flex-1 flex gap-2">
+            <Input
+              placeholder="Nome do jogador"
+              value={newPlayerName}
+              onChange={(e) => setNewPlayerName(e.target.value)}
+            />
+            <Button onClick={handleCreatePlayerRecord}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Novo Registro
+            </Button>
+          </div>
+          <Button onClick={() => setIsSearchOpen(true)}>
+            <Search className="h-4 w-4 mr-2" />
+            Buscar Jogador
           </Button>
         </div>
-      </div>
 
-      <CashGameSummary {...summaryData} />
+        <PlayerTable players={players} onViewHistory={handleViewHistory} />
 
-      <div className="flex gap-2">
-        <div className="flex-1 flex gap-2">
-          <Input
-            placeholder="Nome do jogador"
-            value={newPlayerName}
-            onChange={(e) => setNewPlayerName(e.target.value)}
-          />
-          <Button onClick={handleCreatePlayerRecord}>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Novo Registro
-          </Button>
-        </div>
-        <Button onClick={() => setIsSearchOpen(true)}>
-          <Search className="h-4 w-4 mr-2" />
-          Buscar Jogador
-        </Button>
-      </div>
-
-      <PlayerTable players={players} onViewHistory={handleViewHistory} />
-
-      <TransactionDialog
-        open={isTransactionDialogOpen}
-        onOpenChange={setIsTransactionDialogOpen}
-        players={players}
-        onSubmit={async (values) => {
-          try {
-            await supabase.from("transactions").insert([
-              {
-                player_id: values.player_id,
-                type: values.type,
-                chips: values.chips,
-                payment: values.payment,
-                method: values.method,
-              },
-            ]);
-            await refreshData();
-          } catch (error: any) {
-            console.error("Error adding transaction:", error);
-            throw error;
-          }
-        }}
-      />
-
-      <CloseGameDialog
-        open={isCloseGameDialogOpen}
-        onOpenChange={setIsCloseGameDialogOpen}
-        onConfirm={handleCloseGame}
-      />
-
-      {selectedPlayerId && (
-        <TransactionHistory
-          open={!!selectedPlayerId}
-          onOpenChange={() => setSelectedPlayerId(null)}
-          transactions={[]} // This will be populated by the component itself
-          playerName={selectedPlayerName}
-          onTransactionDeleted={refreshData}
+        <TransactionDialog
+          open={isTransactionDialogOpen}
+          onOpenChange={setIsTransactionDialogOpen}
+          players={players}
+          onSubmit={async (values) => {
+            try {
+              await supabase.from("transactions").insert([
+                {
+                  player_id: values.player_id,
+                  type: values.type,
+                  chips: values.chips,
+                  payment: values.payment,
+                  method: values.method,
+                },
+              ]);
+              await refreshData();
+            } catch (error: any) {
+              console.error("Error adding transaction:", error);
+              throw error;
+            }
+          }}
         />
-      )}
 
-      <CommandDialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
-        <Command>
-          <CommandInput
-            placeholder="Buscar jogador..."
-            onValueChange={handleSearch}
+        <CloseGameDialog
+          open={isCloseGameDialogOpen}
+          onOpenChange={setIsCloseGameDialogOpen}
+          onConfirm={handleCloseGame}
+        />
+
+        {selectedPlayerId && (
+          <TransactionHistory
+            open={!!selectedPlayerId}
+            onOpenChange={() => setSelectedPlayerId(null)}
+            transactions={[]}
+            playerName={selectedPlayerName}
+            onTransactionDeleted={refreshData}
           />
-          <CommandList>
-            <CommandEmpty>Nenhum jogador encontrado.</CommandEmpty>
-            <CommandGroup>
-              {searchResults.map((player) => (
-                <CommandItem
-                  key={player.id}
-                  onSelect={() => handleSelectPlayer(player)}
-                >
-                  {player.name}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </CommandDialog>
-    </div>
+        )}
+
+        <CommandDialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
+          <Command>
+            <CommandInput
+              placeholder="Buscar jogador..."
+              onValueChange={handleSearch}
+            />
+            <CommandList>
+              <CommandEmpty>Nenhum jogador encontrado.</CommandEmpty>
+              <CommandGroup>
+                {searchResults.map((player) => (
+                  <CommandItem
+                    key={player.id}
+                    onSelect={() => handleSelectPlayer(player)}
+                  >
+                    {player.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </CommandDialog>
+      </div>
+      
+      <GameFooter {...summaryData} />
+    </>
   );
 }
