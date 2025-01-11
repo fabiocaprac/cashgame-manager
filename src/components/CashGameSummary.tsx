@@ -28,11 +28,11 @@ export function CashGameSummary({
   finalBalance,
   movements,
 }: CashGameSummaryProps) {
-  const methodIcons: Record<PaymentMethod, React.ElementType> = {
+  const methodIcons = {
     cash: BanknoteIcon,
     card: CreditCard,
     pix: QrCode,
-  };
+  } as const;
 
   const getMethodLabel = (method: PaymentMethod): string => {
     switch (method) {
