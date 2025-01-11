@@ -28,7 +28,7 @@ export function CashGameSummary({
   finalBalance,
   movements,
 }: CashGameSummaryProps) {
-  const methodIcons: Record<PaymentMethod, typeof BanknoteIcon> = {
+  const methodIcons = {
     cash: BanknoteIcon,
     card: CreditCard,
     pix: QrCode,
@@ -104,15 +104,15 @@ export function CashGameSummary({
         </CardContent>
       </Card>
 
-      {movements.map((movement) => {
+      {movements.map((movement, index) => {
         const Icon = methodIcons[movement.method];
         return (
-          <Card key={movement.method} className="glass-card col-span-1">
+          <Card key={`${movement.method}-${index}`} className="glass-card col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 Movimentação - {getMethodLabel(movement.method)}
               </CardTitle>
-              <Icon className="h-4 w-4 text-muted-foreground" />
+              {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
