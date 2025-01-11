@@ -31,7 +31,8 @@ const Index = () => {
     addPlayer, 
     addTransaction,
     isLoading,
-    isGameClosed 
+    isGameClosed,
+    refreshData
   } = useGame();
   
   const [newPlayerName, setNewPlayerName] = useState("");
@@ -238,6 +239,7 @@ const Index = () => {
               onOpenChange={setHistoryDialogOpen}
               transactions={playerTransactions}
               playerName={selectedPlayer.name}
+              onTransactionDeleted={refreshData}
             />
           )}
         </>

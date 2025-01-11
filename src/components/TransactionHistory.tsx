@@ -7,12 +7,17 @@ import {
 } from "@/components/ui/dialog";
 import { Transaction } from "@/types";
 import { format } from "date-fns";
+import { Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface TransactionHistoryProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   transactions: Transaction[];
   playerName: string;
+  onTransactionDeleted?: () => void;
 }
 
 export function TransactionHistory({
@@ -20,7 +25,37 @@ export function TransactionHistory({
   onOpenChange,
   transactions,
   playerName,
+  onTransactionDeleted,
 }: TransactionHistoryProps) {
+  const { toast } = useToast();
+
+  const handleDeleteTransaction = async (transactionId: string) => {
+    try {
+      const { error } = await supabase
+        .from("transactions")
+        .delete()
+        .eq("id", transactionId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Transação excluída com sucesso",
+      });
+
+      if (onTransactionDeleted) {
+        onTransactionDeleted();
+      }
+    } catch (error: any) {
+      console.error("Error deleting transaction:", error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao excluir transação",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[725px]">
@@ -39,6 +74,7 @@ export function TransactionHistory({
                 <th className="text-right py-3 px-4">Fichas</th>
                 <th className="text-right py-3 px-4">Pagamento</th>
                 <th className="text-left py-3 px-4">Método</th>
+                <th className="text-right py-3 px-4">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -62,6 +98,16 @@ export function TransactionHistory({
                       : transaction.method === "card"
                       ? "Cartão"
                       : "PIX"}
+                  </td>
+                  <td className="text-right py-3 px-4">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteTransaction(transaction.id)}
+                      className="h-8 w-8"
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive hover:text-destructive/90" />
+                    </Button>
                   </td>
                 </tr>
               ))}

@@ -14,6 +14,7 @@ interface GameContextType {
   closeGame: () => Promise<void>;
   addPlayer: (name: string) => Promise<void>;
   addTransaction: (values: any) => Promise<void>;
+  refreshData: () => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -263,6 +264,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const refreshData = async () => {
+    if (gameId) {
+      await fetchGameData();
+    }
+  };
+
   return (
     <GameContext.Provider
       value={{
@@ -275,6 +282,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         closeGame,
         addPlayer,
         addTransaction,
+        refreshData,
       }}
     >
       {children}
