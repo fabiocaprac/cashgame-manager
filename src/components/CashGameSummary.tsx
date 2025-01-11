@@ -5,7 +5,6 @@ import {
   BanknoteIcon,
   CreditCard,
   QrCode,
-  Receipt,
   Wallet,
 } from "lucide-react";
 
