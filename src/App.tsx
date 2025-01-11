@@ -27,6 +27,14 @@ function App() {
                 </GameProvider>
               }
             />
+            <Route
+              path="/games/:id"
+              element={
+                <GameProvider>
+                  <Index />
+                </GameProvider>
+              }
+            />
             <Route path="/closed-games" element={<ClosedGames />} />
             <Route path="/closed-games/:id" element={<ClosedGameDetails />} />
           </Routes>
