@@ -33,11 +33,11 @@ export function GameFooter({
       isExpanded ? "pb-6" : "h-16"
     )}>
       <div className="container mx-auto p-4">
-        <div className="flex items-center justify-end mb-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setIsExpanded(!isExpanded)}
+            className="ml-auto mb-4"
           >
             {isExpanded ? (
               <ChevronDown className="h-4 w-4" />
@@ -45,7 +45,6 @@ export function GameFooter({
               <ChevronUp className="h-4 w-4" />
             )}
           </Button>
-        </div>
         
         {!isExpanded ? (
           <div className="flex justify-between items-center">
