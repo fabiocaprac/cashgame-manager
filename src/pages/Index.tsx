@@ -19,19 +19,26 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { supabase } from "@/integrations/supabase/client";
+import { calculatePlayerBalance } from "@/utils/balanceCalculations";
+import { PaymentMethod } from "@/types";
 
 export default function Index() {
   const { game, players, addPlayer, refreshData } = useGame();
   const [isTransactionDialogOpen, setIsTransactionDialogOpen] = useState(false);
   const [isCloseGameDialogOpen, setIsCloseGameDialogOpen] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [selectedPlayerName, setSelectedPlayerName] = useState<string>("");
   const [newPlayerName, setNewPlayerName] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { toast } = useToast();
 
   const handleViewHistory = (playerId: string) => {
-    setSelectedPlayerId(playerId);
+    const player = players.find(p => p.id === playerId);
+    if (player) {
+      setSelectedPlayerName(player.name);
+      setSelectedPlayerId(playerId);
+    }
   };
 
   const handleCloseHistory = () => {
@@ -94,12 +101,7 @@ export default function Index() {
     try {
       const { error } = await supabase
         .from("players")
-        .insert([
-          { 
-            name: newPlayerName,
-            game_id: null // Criando jogador sem associação com jogo
-          }
-        ]);
+        .insert([{ name: newPlayerName, game_id: null }]);
 
       if (error) throw error;
 
@@ -119,7 +121,75 @@ export default function Index() {
     }
   };
 
+  const handleCloseGame = async () => {
+    try {
+      const { error } = await supabase.rpc('close_game', {
+        game_id: game?.id,
+        closed_at: new Date().toISOString()
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Caixa fechado com sucesso",
+      });
+    } catch (error: any) {
+      console.error("Error closing game:", error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao fechar o caixa",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Calculate summary data
+  const calculateSummaryData = () => {
+    const chipsInPlay = players.reduce((sum, player) => sum + calculatePlayerBalance(player), 0);
+    const pendingDebits = players.reduce((sum, player) => {
+      const balance = calculatePlayerBalance(player);
+      return sum + (balance < 0 ? Math.abs(balance) : 0);
+    }, 0);
+    const pendingCredits = players.reduce((sum, player) => {
+      const balance = calculatePlayerBalance(player);
+      return sum + (balance > 0 ? balance : 0);
+    }, 0);
+
+    const movements = [
+      "cash", "card", "pix", "voucher"
+    ].map((method) => {
+      const methodTransactions = players.flatMap(player => {
+        const transactions = [];
+        if (player.cashPayments && method === "cash") transactions.push({ amount: player.cashPayments });
+        if (player.cardPayments && method === "card") transactions.push({ amount: player.cardPayments });
+        if (player.pixPayments && method === "pix") transactions.push({ amount: player.pixPayments });
+        return transactions;
+      });
+
+      const received = methodTransactions.reduce((sum, t) => sum + (t.amount > 0 ? t.amount : 0), 0);
+      const paid = methodTransactions.reduce((sum, t) => sum + (t.amount < 0 ? Math.abs(t.amount) : 0), 0);
+
+      return {
+        method: method as PaymentMethod,
+        received,
+        paid,
+        balance: received - paid
+      };
+    });
+
+    return {
+      chipsInPlay,
+      pendingDebits,
+      pendingCredits,
+      finalBalance: chipsInPlay,
+      movements
+    };
+  };
+
   if (!game) return null;
+
+  const summaryData = calculateSummaryData();
 
   return (
     <div className="container py-6 space-y-6">
@@ -138,7 +208,7 @@ export default function Index() {
         </div>
       </div>
 
-      <CashGameSummary players={players} />
+      <CashGameSummary {...summaryData} />
 
       <div className="flex gap-2">
         <div className="flex-1 flex gap-2">
@@ -186,12 +256,16 @@ export default function Index() {
       <CloseGameDialog
         open={isCloseGameDialogOpen}
         onOpenChange={setIsCloseGameDialogOpen}
+        onConfirm={handleCloseGame}
       />
 
       {selectedPlayerId && (
         <TransactionHistory
-          playerId={selectedPlayerId}
-          onClose={handleCloseHistory}
+          open={!!selectedPlayerId}
+          onOpenChange={() => setSelectedPlayerId(null)}
+          transactions={[]} // This will be populated by the component itself
+          playerName={selectedPlayerName}
+          onTransactionDeleted={refreshData}
         />
       )}
 
