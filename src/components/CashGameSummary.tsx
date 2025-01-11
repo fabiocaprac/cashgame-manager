@@ -33,7 +33,6 @@ export function CashGameSummary({
     cash: BanknoteIcon,
     card: CreditCard,
     pix: QrCode,
-    voucher: Receipt,
   };
 
   const getMethodLabel = (method: PaymentMethod): string => {
@@ -44,8 +43,6 @@ export function CashGameSummary({
         return "Cartão";
       case "pix":
         return "PIX";
-      case "voucher":
-        return "Vale";
     }
   };
 

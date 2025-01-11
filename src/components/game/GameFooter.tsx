@@ -3,6 +3,7 @@ import { CashGameSummary } from "@/components/CashGameSummary";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PaymentMethod } from "@/types";
 
 interface GameFooterProps {
   chipsInPlay: number;
@@ -10,7 +11,7 @@ interface GameFooterProps {
   pendingCredits: number;
   finalBalance: number;
   movements: {
-    method: "cash" | "card" | "pix" | "voucher";
+    method: PaymentMethod;
     received: number;
     paid: number;
     balance: number;
