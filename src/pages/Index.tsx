@@ -116,7 +116,8 @@ const Index = () => {
         .insert([
           { 
             name: newPlayerName,
-            game_id: game?.id || '00000000-0000-0000-0000-000000000000' // ID temporário
+            // Usando um ID de jogo nulo para indicar que é apenas um registro de jogador
+            game_id: '00000000-0000-0000-0000-000000000000'
           }
         ])
         .select()
@@ -126,7 +127,7 @@ const Index = () => {
       
       toast({
         title: "Sucesso",
-        description: "Jogador registrado com sucesso",
+        description: "Jogador registrado com sucesso no banco de dados",
       });
       
       setNewPlayerName("");
