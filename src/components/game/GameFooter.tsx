@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { CashGameSummary } from "@/components/CashGameSummary";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, BanknoteIcon, CreditCard, QrCode } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PaymentMethod } from "@/types";
 
@@ -27,6 +27,12 @@ export function GameFooter({
 }: GameFooterProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
+  const methodIcons = {
+    cash: BanknoteIcon,
+    card: CreditCard,
+    pix: QrCode,
+  };
+
   return (
     <div className={cn(
       "fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t transition-all duration-300",
@@ -49,33 +55,20 @@ export function GameFooter({
         {!isExpanded ? (
           <div className="flex justify-between items-center">
             <div className="flex gap-8">
-              <div>
-                <span className="text-sm text-muted-foreground">Fichas:</span>
-                <span className="ml-2 font-medium">
-                  R$ {chipsInPlay.toFixed(2)}
-                </span>
-              </div>
-              <div>
-                <span className="text-sm text-muted-foreground">Débitos:</span>
-                <span className="ml-2 font-medium text-destructive">
-                  -R$ {pendingDebits.toFixed(2)}
-                </span>
-              </div>
-              <div>
-                <span className="text-sm text-muted-foreground">Créditos:</span>
-                <span className="ml-2 font-medium text-green-500">
-                  R$ {pendingCredits.toFixed(2)}
-                </span>
-              </div>
-              <div>
-                <span className="text-sm text-muted-foreground">Saldo:</span>
-                <span className={cn(
-                  "ml-2 font-medium",
-                  finalBalance >= 0 ? "text-green-500" : "text-destructive"
-                )}>
-                  R$ {Math.abs(finalBalance).toFixed(2)}
-                </span>
-              </div>
+              {movements.map((movement) => {
+                const Icon = methodIcons[movement.method];
+                return (
+                  <div key={movement.method} className="flex items-center gap-2">
+                    {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
+                    <span className={cn(
+                      "font-medium",
+                      movement.balance >= 0 ? "text-green-500" : "text-destructive"
+                    )}>
+                      {movement.balance >= 0 ? "+" : "-"}R$ {Math.abs(movement.balance).toFixed(2)}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : (
