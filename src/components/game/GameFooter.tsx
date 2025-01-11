@@ -32,8 +32,7 @@ export function GameFooter({
       isExpanded ? "h-[300px]" : "h-16"
     )}>
       <div className="container mx-auto p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Resumo do Caixa</h2>
+        <div className="flex items-center justify-end mb-4">
           <Button
             variant="ghost"
             size="sm"
