@@ -30,7 +30,7 @@ import { EditAuthDialog } from "./EditAuthDialog";
 import { useToast } from "./ui/use-toast";
 
 const formSchema = z.object({
-  playerId: z.string().min(1, "Selecione um jogador"),
+  player_id: z.string().min(1, "Selecione um jogador"),
   type: z.enum(["buy-in", "cash-out", "refund"] as const),
   chips: z.number().min(0),
   payment: z.number().min(0),
@@ -112,7 +112,7 @@ export function TransactionDialog({
               <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="playerId"
+                  name="player_id"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Jogador</FormLabel>
