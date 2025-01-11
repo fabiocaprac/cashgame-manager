@@ -34,7 +34,7 @@ const formSchema = z.object({
   type: z.enum(["buy-in", "cash-out", "refund"] as const),
   chips: z.number().min(0),
   payment: z.number().min(0),
-  method: z.enum(["cash", "card", "pix", "voucher"] as const),
+  method: z.enum(["cash", "card", "pix"] as const),
 });
 
 type TransactionFormValues = z.infer<typeof formSchema>;
@@ -217,7 +217,6 @@ export function TransactionDialog({
                           <SelectItem value="cash">Dinheiro</SelectItem>
                           <SelectItem value="card">Cartão</SelectItem>
                           <SelectItem value="pix">Pix</SelectItem>
-                          <SelectItem value="voucher">Vale</SelectItem>
                         </SelectContent>
                       </Select>
                     </FormItem>

@@ -11,7 +11,7 @@ export type Player = {
 };
 
 export type TransactionType = "buy-in" | "cash-out" | "refund";
-export type PaymentMethod = "cash" | "card" | "pix" | "voucher";
+export type PaymentMethod = "cash" | "card" | "pix";
 
 export type Transaction = {
   id: string;
