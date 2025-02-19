@@ -2,7 +2,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Player, Transaction, TransactionType, PaymentMethod } from "@/types";
 
 interface GameContextType {
@@ -23,6 +23,7 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const params = useParams();
   const [game, setGame] = useState<any>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -30,16 +31,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [isGameClosed, setIsGameClosed] = useState(false);
   const [currentSession, setCurrentSession] = useState<string | null>(null);
 
-  const gameId = window.location.pathname.split("/").pop();
-
   useEffect(() => {
-    if (gameId) {
+    if (params.id) {
       createGameSession();
-      fetchGameData();
+      fetchGameData(params.id);
     } else {
       setIsLoading(false);
     }
-  }, [gameId]);
+  }, [params.id]);
 
   const createGameSession = async () => {
     try {
@@ -61,7 +60,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const fetchGameData = async () => {
+  const fetchGameData = async (gameId: string) => {
     try {
       const { data: gameData, error: gameError } = await supabase
         .from("open_cashier")
@@ -92,7 +91,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       const typedTransactions = transactionsData.map(t => ({
         ...t,
         type: t.type as TransactionType,
-        method: t.method as PaymentMethod
+        method: t.method as PaymentMethod,
+        session_id: currentSession || ""
       }));
 
       const enhancedPlayers = playersData.map((player) => {
@@ -263,7 +263,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
 
       setTransactions([...transactions, transaction as Transaction]);
-      await fetchGameData(); // Refresh all data to ensure consistency
+      await fetchGameData(game.id); // Pass the game ID explicitly
     } catch (error: any) {
       console.error("Error adding transaction:", error);
       toast({
@@ -275,8 +275,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   };
 
   const refreshData = async () => {
-    if (gameId) {
-      await fetchGameData();
+    if (params.id) {
+      await fetchGameData(params.id);
     }
   };
 
