@@ -4,6 +4,7 @@ export type Player = {
   name: string;
   game_id: string;
   created_at: string;
+  balance?: number;
   purchases: number;
   returns: number;
   cashPayments: number;
@@ -22,5 +23,16 @@ export type Transaction = {
   payment: number;
   method: PaymentMethod;
   created_at: string;
-  session_id: string;
+  session_id?: string;
+  closed_register_id?: string;
+};
+
+export type Game = {
+  id: string;
+  name: string | null;
+  notes?: string;
+  created_at: string;
+  created_by: string;
+  last_transaction_at: string | null;
+  current_balance?: number;
 };

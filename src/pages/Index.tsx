@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useGame } from "@/components/game/GameProvider";
 import { Button } from "@/components/ui/button";
@@ -39,10 +40,6 @@ export default function Index() {
       setSelectedPlayerName(player.name);
       setSelectedPlayerId(playerId);
     }
-  };
-
-  const handleCloseHistory = () => {
-    setSelectedPlayerId(null);
   };
 
   const handleSearch = async (value: string) => {
@@ -121,29 +118,6 @@ export default function Index() {
     }
   };
 
-  const handleCloseGame = async () => {
-    try {
-      const { error } = await supabase.rpc('close_game', {
-        game_id: game?.id,
-        closed_at: new Date().toISOString()
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Sucesso",
-        description: "Caixa fechado com sucesso",
-      });
-    } catch (error: any) {
-      console.error("Error closing game:", error);
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao fechar o caixa",
-        variant: "destructive",
-      });
-    }
-  };
-
   // Calculate summary data
   const calculateSummaryData = () => {
     const chipsInPlay = players.reduce((sum, player) => sum + calculatePlayerBalance(player), 0);
@@ -157,7 +131,7 @@ export default function Index() {
     }, 0);
 
     const movements = [
-      "cash", "card", "pix", "voucher"
+      "cash", "card", "pix"
     ].map((method) => {
       const methodTransactions = players.flatMap(player => {
         const transactions = [];
@@ -235,15 +209,16 @@ export default function Index() {
           players={players}
           onSubmit={async (values) => {
             try {
-              await supabase.from("transactions").insert([
-                {
-                  player_id: values.player_id,
-                  type: values.type,
-                  chips: values.chips,
-                  payment: values.payment,
-                  method: values.method,
-                },
-              ]);
+              const { error } = await supabase.rpc("add_transaction", {
+                p_player_id: values.player_id,
+                p_type: values.type,
+                p_chips: values.chips,
+                p_payment: values.payment,
+                p_method: values.method,
+                p_created_at: new Date().toISOString()
+              });
+
+              if (error) throw error;
               await refreshData();
             } catch (error: any) {
               console.error("Error adding transaction:", error);
@@ -255,7 +230,24 @@ export default function Index() {
         <CloseGameDialog
           open={isCloseGameDialogOpen}
           onOpenChange={setIsCloseGameDialogOpen}
-          onConfirm={handleCloseGame}
+          onConfirm={async () => {
+            try {
+              const { error } = await supabase.rpc('close_game', {
+                game_id: game.id,
+                closed_at: new Date().toISOString()
+              });
+
+              if (error) throw error;
+
+              toast({
+                title: "Sucesso",
+                description: "Caixa fechado com sucesso",
+              });
+            } catch (error: any) {
+              console.error("Error closing game:", error);
+              throw error;
+            }
+          }}
         />
 
         {selectedPlayerId && (

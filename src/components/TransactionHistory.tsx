@@ -1,3 +1,4 @@
+
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,7 @@ import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useEffect, useState } from "react";
 
 interface TransactionHistoryProps {
   open: boolean;
@@ -23,11 +25,37 @@ interface TransactionHistoryProps {
 export function TransactionHistory({
   open,
   onOpenChange,
-  transactions,
   playerName,
   onTransactionDeleted,
 }: TransactionHistoryProps) {
   const { toast } = useToast();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+
+  const fetchTransactions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("player_id", transactions[0]?.player_id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setTransactions(data);
+    } catch (error: any) {
+      console.error("Error fetching transactions:", error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao carregar transações",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (open && transactions[0]?.player_id) {
+      fetchTransactions();
+    }
+  }, [open]);
 
   const handleDeleteTransaction = async (transactionId: string) => {
     try {
@@ -84,7 +112,8 @@ export function TransactionHistory({
                     {format(new Date(transaction.created_at), "dd/MM/yyyy, HH:mm:ss")}
                   </td>
                   <td className="py-3 px-4">
-                    {transaction.type === "buy-in" ? "Compra" : "Devolução"}
+                    {transaction.type === "buy-in" ? "Compra" : 
+                     transaction.type === "cash-out" ? "Saída" : "Devolução"}
                   </td>
                   <td className="text-right py-3 px-4">
                     R$ {transaction.chips.toFixed(2)}
