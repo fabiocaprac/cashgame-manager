@@ -6,7 +6,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Transaction } from "@/types";
+import { Transaction, TransactionType, PaymentMethod } from "@/types";
 import { format } from "date-fns";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,17 @@ export function TransactionHistory({
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setTransactions(data);
+      
+      // Convert the raw data to properly typed Transaction objects
+      const typedTransactions: Transaction[] = (data || []).map(t => ({
+        ...t,
+        type: t.type as TransactionType, // Explicitly type as TransactionType
+        method: t.method as PaymentMethod, // Explicitly type as PaymentMethod
+        chips: Number(t.chips),
+        payment: Number(t.payment)
+      }));
+
+      setTransactions(typedTransactions);
     } catch (error: any) {
       console.error("Error fetching transactions:", error);
       toast({
@@ -74,6 +84,9 @@ export function TransactionHistory({
       if (onTransactionDeleted) {
         onTransactionDeleted();
       }
+      
+      // Atualiza a lista local após deletar
+      setTransactions(transactions.filter(t => t.id !== transactionId));
     } catch (error: any) {
       console.error("Error deleting transaction:", error);
       toast({
