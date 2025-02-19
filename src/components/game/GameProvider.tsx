@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -27,16 +28,38 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isGameClosed, setIsGameClosed] = useState(false);
+  const [currentSession, setCurrentSession] = useState<string | null>(null);
 
   const gameId = window.location.pathname.split("/").pop();
 
   useEffect(() => {
     if (gameId) {
+      createGameSession();
       fetchGameData();
     } else {
       setIsLoading(false);
     }
   }, [gameId]);
+
+  const createGameSession = async () => {
+    try {
+      const { data: session, error } = await supabase
+        .from("game_sessions")
+        .insert([
+          {
+            is_active: true,
+            start_time: new Date().toISOString(),
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+      setCurrentSession(session.id);
+    } catch (error) {
+      console.error("Error creating game session:", error);
+    }
+  };
 
   const fetchGameData = async () => {
     try {
@@ -154,40 +177,26 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     if (!game) return;
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { error } = await supabase.rpc('close_game', {
+        game_id: game.id,
+        closed_at: new Date().toISOString()
+      });
 
-      if (!user) throw new Error("User not authenticated");
+      if (error) throw error;
 
-      const { error: closeError } = await supabase
-        .from("closed_cashier")
-        .insert([
-          {
-            ...game,
-            closed_at: new Date().toISOString(),
-          },
-        ]);
-
-      if (closeError) throw closeError;
-
-      const { error: transactionsError } = await supabase
-        .from("closed_cashier_transactions")
-        .insert(transactions.map((t) => ({
-          ...t,
-          closed_register_id: game.id,
-        })));
-
-      if (transactionsError) throw transactionsError;
-
-      await supabase.from("transactions").delete().in(
-        "player_id",
-        players.map((p) => p.id)
-      );
-      await supabase.from("players").delete().eq("game_id", game.id);
-      await supabase.from("open_cashier").delete().eq("id", game.id);
+      // Update game session
+      if (currentSession) {
+        await supabase
+          .from("game_sessions")
+          .update({
+            end_time: new Date().toISOString(),
+            is_active: false
+          })
+          .eq("id", currentSession);
+      }
 
       setIsGameClosed(true);
+      navigate("/");
     } catch (error: any) {
       console.error("Error closing game:", error);
       toast({
@@ -234,7 +243,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addTransaction = async (values: any) => {
-    if (!game) return;
+    if (!game || !currentSession) return;
 
     try {
       const { data: transaction, error } = await supabase
@@ -245,6 +254,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           chips: values.chips,
           payment: values.payment,
           method: values.method as PaymentMethod,
+          session_id: currentSession,
           created_at: new Date().toISOString(),
         }])
         .select()

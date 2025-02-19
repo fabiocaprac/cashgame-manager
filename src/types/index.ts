@@ -1,3 +1,4 @@
+
 export type Player = {
   id: string;
   name: string;
@@ -21,4 +22,5 @@ export type Transaction = {
   payment: number;
   method: PaymentMethod;
   created_at: string;
+  session_id: string;
 };
