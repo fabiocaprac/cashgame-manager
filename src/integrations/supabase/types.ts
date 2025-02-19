@@ -92,6 +92,30 @@ export type Database = {
           },
         ]
       }
+      game_sessions: {
+        Row: {
+          created_at: string
+          end_time: string | null
+          id: string
+          is_active: boolean
+          start_time: string
+        }
+        Insert: {
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          is_active?: boolean
+          start_time?: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          is_active?: boolean
+          start_time?: string
+        }
+        Relationships: []
+      }
       open_cashier: {
         Row: {
           created_at: string
@@ -179,6 +203,7 @@ export type Database = {
           method: string
           payment: number
           player_id: string
+          session_id: string
           type: string
         }
         Insert: {
@@ -188,6 +213,7 @@ export type Database = {
           method: string
           payment: number
           player_id: string
+          session_id: string
           type: string
         }
         Update: {
@@ -197,6 +223,7 @@ export type Database = {
           method?: string
           payment?: number
           player_id?: string
+          session_id?: string
           type?: string
         }
         Relationships: [
@@ -205,6 +232,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions"
             referencedColumns: ["id"]
           },
         ]
